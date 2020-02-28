@@ -14,7 +14,8 @@ dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_To
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday)
 dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forImport.csv", stringsAsFactors = F) %>%
-  tbl_df()
+  tbl_df() %>%
+  mutate(DOYdepl = fecha_depl %>% mdy %>% yday)
 dat.banding <- dat.banding %>%
   mutate(Tagged = anillo %in% dat.trans$anillo)
 
@@ -32,17 +33,39 @@ ind.afterD31 <- which(dat.locations$DOY < 200)
 dat.locations$DOS[ind.beforeD31] <- dat.locations$DOS[ind.beforeD31] - (minDOS - 1)
 D31 <- (dat.locations$fecha %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
 dat.locations$DOS[ind.afterD31] <- dat.locations$DOS[ind.afterD31] + D31[ind.afterD31]
+
+dat.trans$DOSdepl <- dat.trans$DOYdepl
+ind.beforeD31 <- which(dat.trans$DOYdepl > 200)
+ind.afterD31 <- which(dat.trans$DOYdepl < 200)
+dat.trans$DOSdepl[ind.beforeD31] <- dat.trans$DOSdepl[ind.beforeD31] - (minDOS - 1)
+D31 <- (dat.trans$fecha_depl %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
+dat.trans$DOSdepl[ind.afterD31] <- dat.trans$DOSdepl[ind.afterD31] + D31[ind.afterD31]
 rm(D31)
 
-# Remove human-caused deaths #
-#dat.locations$survive[which(dat.locations$anillo == 272162859 & dat.locations$DOS == 84)] <- 9 # found dead without injuries the day after deployment.
+# Get tagging statuses into banding data table.
+dat.banding <- dat.banding %>%
+  left_join( # If transmitter replaced, uses first time transmitter was deployed for date of deployment.
+    dat.trans %>%
+      select(Site, Season, anillo, DOSdepl) %>%
+      group_by(Site, Season, anillo) %>%
+      summarise(DOSdepl = min(DOSdepl)),
+    by = c("Site", "Season", "anillo")) %>%
+  mutate(Tagged = !is.na(DOSdepl))
+
+# Temp corrections #
+dat.locations <- dat.locations %>%
+  filter(!(anillo == 240112681 & Season == "2017-2018" & Site == "Janos" & DOS == 27)) # temp removal of erroneous mortality event.
+dat.locations <- dat.locations %>%
+  filter(!(anillo == 255009988 & Site == "VACO" & Season == "2017-2018" & DOS == 35 & survive == 0)) # temp removal of erroneous mortality event.
+dat.locations <- dat.locations %>%
+  filter(!(anillo == 111111312 & Site == "VACO" & Season == "2018-2019" & DOS > 89)) # Remove extraneous mortality records following the initial observation.
 
 # Get all detection histories by species #
 species <- unique(dat.locations$especie)
 for(sp in species) {
   dlocs <- dat.locations %>% filter(especie == sp) %>%
     select(anillo, Site, Season, DOS, survive) %>%
-    filter(survive != 9) %>%
+    #filter(survive != 9) %>%
     mutate(Dataset = "Locations") %>% unique
   dbands <- dat.banding %>% filter(especie == sp) %>%
     select(anillo, Site, Season, DOS) %>%
@@ -74,18 +97,18 @@ out <- matrix(NA, nrow = length(species), ncol = length(cols),
 
 for(spp in species) {
   out[spp, "No_indivs"] <- str_c("detections.", spp) %>%
-    as.name %>% eval %>%
+    as.name %>% eval %>% filter(survive != 9) %>%
     pull(anillo) %>% unique %>% length
   out[spp, "No_Rtagged"] <- dat.banding %>%
     filter(especie == spp & Tagged) %>%
     pull(anillo) %>% unique %>% length
   out[spp, "Recap_indivis"] <- str_c("detections.", spp) %>%
-    as.name %>% eval %>%
+    as.name %>% eval %>% filter(survive != 9) %>%
     select(anillo, Season) %>% unique %>%
     pull(anillo) %>% tapply(., ., length) %>%
     (function(x) sum(x > 1))
   daysMonitored <- str_c("detections.", spp) %>%
-    as.name %>% eval %>%
+    as.name %>% eval %>% filter(survive != 9) %>%
     dplyr::group_by(anillo, Season) %>%
     summarise(minDOS = min(DOS), maxDOS = max(DOS)) %>%
     mutate(days = maxDOS - minDOS) %>%
@@ -95,7 +118,7 @@ for(spp in species) {
     pull(days)
   out[spp, "nDays"] <- sum(daysMonitored)
   out[spp, "nMort"] <- str_c("detections.", spp) %>%
-    as.name %>% eval %>% pull(survive) %>% (function(x) sum(x == 0))
+    as.name %>% eval %>% filter(survive != 9) %>% pull(survive) %>% (function(x) sum(x == 0))
   out[spp, "No_ind_monitored"] <- sum(daysMonitored > 0)
   out[spp, "Mean_Days_radiotracked"] <- mean(daysMonitored[which(daysMonitored > 0)])
   out[spp, "Min_Days_radiotracked"] <- min(daysMonitored[which(daysMonitored > 0)])
@@ -125,7 +148,7 @@ for(spp in species) {
   out[spp, "Min_MassChange_Untagged"] <- min(massChange)
   out[spp, "Max_MassChange_Untagged"] <- max(massChange)
 }
-write.csv(out, "Summary.csv", row.names = T)
+#write.csv(out, "Summary.csv", row.names = T)
 
 sites <- unique(dat.banding$Site)
 nrows <- length(species) * length(sites)
@@ -143,14 +166,15 @@ for(spp in species) for(sit in sites) {
   if(length(mass) > 1) out$SD[counter] <- sd(mass)
   counter <- counter + 1
 }
-write.csv(out, "Summary_mass_by_site.csv", row.names = T)
+#write.csv(out, "Summary_mass_by_site.csv", row.names = T)
 
-# Compile interval data #
+# Compile capture histories and corresponding table of covariates and indices for analysis #
 for(sp in species[1:2]) {
-  dets <- str_c("detections.", sp) %>%
+  dets <- str_c("detections.", sp) %>% # Get raw detections
     as.name %>% eval %>%
     arrange(Site, Season, anillo, DOS)
-  obsInt <- dets %>% slice(1:(nrow(dets) - 1)) %>%
+  
+  obsRaw <- dets %>% slice(1:(nrow(dets) - 1)) %>% # Put detections into interval format (intermediate processing step)
     bind_cols(
       dets %>% slice(2:nrow(dets))
     ) %>%
@@ -163,12 +187,77 @@ for(sp in species[1:2]) {
            SeasonInd = as.factor(Season) %>% as.integer(),
            IntLength = DOS1 - DOS) %>%
     select(anillo, Indiv, Site, SiteInd, Season, SeasonInd, DOS, survive1, IntLength) %>%
+    arrange(Site, Season, anillo, DOS) %>%
     rename(DOSst = DOS, survive = survive1)
-  #cols <- c("Indiv", "SiteInd", "SeasonInd", "DOSst", "DOSend", "nDays", "survive")
-  assign(str_c("obsIntervals.", sp), obsInt)
-}
-rm(obsInt, dets)
+  
+  # Build observation ID tables and data matrices for each species.
+  Covs <- obsRaw %>% select(Site, SiteInd, Season, SeasonInd, anillo, Indiv) %>% unique
+  ymat <- matrix(NA, nrow = nrow(Covs), ncol = max(dets$DOS))
+  for(i in 1:nrow(Covs)) {
+    obs <- obsRaw %>% filter(Indiv == Covs$Indiv[i] &
+                               SiteInd == Covs$SiteInd[i] &
+                               SeasonInd == Covs$SeasonInd[i] &
+                               survive != 9)
+    if(nrow(obs) > 0) {
+      firstDay <- min(obs$DOSst)
+      penultimateDay <- max(obs$DOSst)
+      lastDay <- max(obs$DOSst) + obs$IntLength[which(obs$DOSst == max(obs$DOSst))]
+      if(!any(obs$survive == 0)) ymat[i, firstDay:lastDay] <- 1
+      if(any(obs$survive == 0)) {
+        if(sum(obs$survive == 0) == 1 &
+           which(obs$survive == 0) == which(obs$DOSst == max(obs$DOSst))) {
+          ymat[i, firstDay:penultimateDay] <- 1
+          ymat[i, lastDay] <- 0
+          } else {
+            stop("Error in survival history - more than one mortality or mortality not at the end.")
+          }
+      }
+    # Stick 9s into the data matrix where present.
+    obs9s <- obsRaw %>% filter(Indiv == Covs$Indiv[i] &
+                                 SiteInd == Covs$SiteInd[i] &
+                                 SeasonInd == Covs$SeasonInd[i] &
+                                 survive == 9)
+    if(nrow(obs9s) > 0) for(ii in nrow(obs9s):1) {
+      firstDay9 <- obs9s$DOSst[ii]
+      lastDay9 <- obs9s$DOSst[ii] + obs9s$IntLength[ii]
+      if(lastDay9 == lastDay) {
+        ymat[i, (firstDay9 + 1):lastDay9] <- 9
+        lastDay <- firstDay9
+      }
+    }
+    }
+  }
+  
+  # Add tagging day #
+  Covs <- Covs %>% left_join(dat.banding %>%
+                                 select(Site, Season, anillo, DOSdepl) %>%
+                                 unique,
+                               by = c("Site", "Season", "anillo"))
+  Covs$DOSdepl[which(is.na(Covs$DOSdepl))] <- 999
 
+  # Remove observations with zero active monitoring days (0s or 1s).
+  ind.rm <- which(apply(ymat, 1, function(x) any(x %in% c(0, 1))) == F)
+  ymat <- ymat[-ind.rm, ]
+  Covs <- Covs %>% slice(-ind.rm)
+  rm(ind.rm)
+  
+  # Identify and store first and last days seen for each individual in each season.
+  Covs <- Covs %>%
+    mutate(firstDay = apply(ymat, 1, function(x) which(!is.na(x))[1]),
+           lastDay = apply(ymat, 1, function(x) {
+             active <- which(!is.na(x))
+             return(active[length(active)])
+             }))
+  ymat[which(ymat == 9)] <- NA
+  Covs$firstDay <- apply(ymat, 1, function(x) which(!is.na(x))[1]) # Recalculate so that first days do not precede the first active day.
+  
+  # Gather final data objects and store.
+  dat <- list(Covs = Covs, ymat = ymat)
+  assign(str_c("data.", sp), dat)
+}
+
+rm(dets, out, cols, counter, sit, sp, spp, mass, massChange, nrows, ind.afterD31, ind.beforeD31, daysMonitored,
+   obs, obs9s, dat, Covs, obsRaw, ymat, i, ii, firstDay, lastDay, penultimateDay, firstDay9, lastDay9)
 save.image("Data_compiled.RData")
 
 # # Compile detection history matrix for review #
