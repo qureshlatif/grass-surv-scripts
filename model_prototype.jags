@@ -8,6 +8,9 @@ sigma.B0 ~ dunif(0,10)
 B.DOS ~ dnorm(0, 0.1)
 B.DOS2 ~ dnorm(0, 0.1)
 
+P.trans ~ dunif(1, 20) # Length of initial transmitter period when transmitter effect is applied.
+B.trans ~ dnorm(0, 0.1) # Transmitter effect.
+
 for(j in 1:nSite) {
   for(t in 1:nSeason) {
     B0[j, t] ~ dnorm(B0.mean, tau.B0)
@@ -19,8 +22,9 @@ for(i in 1:nBird) {
     ymat[i, j] ~ dbern(S[i, j]*ymat[i, j-1])
     }
   for(j in 1:nDOS) {
+    within_period[i, j] <- max(0, P.trans - time_since_depl[i, j]) / (P.trans - time_since_depl[i, j])
     logit(S[i, j]) <- B0[SiteInd[i], SeasonInd[i]] + B.DOS*DOS[i, j] +
-      B.DOS2*pow(DOS[i, j], 2)
+      B.DOS2*pow(DOS[i, j], 2) + B.trans * after_depl[i, j] * within_period[i, j]
     }
   }
 }

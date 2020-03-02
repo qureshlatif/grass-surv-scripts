@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled.RData")
 
 #________ Script inputs________#
-spp <- "BAIS" # BAIS or GRSP
+spp <- "GRSP" # BAIS or GRSP
 model.file <- "grass-surv-scripts/model_prototype.jags"
 
 # MCMC values
@@ -22,14 +22,14 @@ save.out <- str_c("mod_prototype_", spp)
 
 # Data objects to send to JAGS
 data.nams <- c("ymat", "first", "last", "nBird", "nSite", "nSeason", "nDOS",
-             "SeasonInd", "SiteInd", "DOS")
+             "SeasonInd", "SiteInd", "DOS", "time_since_depl", "after_depl")
 
 # Stuff to save from JAGS
-parameters <- c("B0.mean", "sigma.B0", "B0", "B.DOS", "B.DOS2")
+parameters <- c("B0.mean", "sigma.B0", "B0", "B.DOS", "B.DOS2", "B.trans", "P.trans")
 
 # Function for setting initial values in JAGS
 inits <- function()
-  list(B0.mean = rnorm(1), sigma.B0 = runif(1), B.DOS = rnorm(1), B.DOS2 = rnorm(1))
+  list(B0.mean = rnorm(1, 4.8, 1), sigma.B0 = runif(1), B.DOS = rnorm(1), B.DOS2 = rnorm(1), B.trans = rnorm(1))
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -45,6 +45,9 @@ nSite <- max(SiteInd)
 
 # Covariates #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
+DOSdepl <- data.spp$Covs$DOSdepl
+time_since_depl <- DOS - DOSdepl
+after_depl <- (time_since_depl > 0)*1
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
 
 # Fit model
