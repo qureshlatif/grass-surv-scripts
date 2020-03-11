@@ -1,0 +1,64 @@
+model {
+
+#Priors
+B0.mean ~ dunif(-10,10)
+tau.B0 <- 1/(sigma.B0*sigma.B0)
+sigma.B0 ~ dunif(0,10)
+
+B.DOS ~ dnorm(0, 0.1)
+B.DOS2 ~ dnorm(0, 0.1)
+
+P.trans ~ dunif(1, 20) # Length of initial transmitter period when transmitter effect is applied.
+B.trans ~ dnorm(0, 0.1) # Transmitter effect.
+
+# Field veg effects #
+B.hierbas ~ dnorm(0, 0.3)
+B.hierba_ht ~ dnorm(0, 0.3)
+B.arbusto ~ dnorm(0, 0.3)
+B.pastos ~ dnorm(0, 0.3)
+B.pasto_ht ~ dnorm(0, 0.3)
+B.salsola ~ dnorm(0, 0.3)
+B.salsola_ht ~ dnorm(0, 0.3)
+B.arbusto_cv ~ dnorm(0, 0.3)
+
+# Individual characteristics #
+B.peso ~ dnorm(0, 0.3)
+
+for(j in 1:nSite) {
+  for(t in 1:nSeason) {
+    B0[j, t] ~ dnorm(B0.mean, tau.B0)
+  }
+}
+for(i in 1:nBird) {
+  for(j in (first[i] + 1):last[i]) {
+    ymat[i, j] ~ dbern(S[i, j]*ymat[i, j-1])
+    }
+  
+  # Missing data imputation
+  hierbas.imp[i] ~ dnorm(hierbas.z[i], pow(hierbas.sd, -2))T(hierbas.lower, hierbas.upper)
+  hierbas[i] <- hierbas.z[i]*(1-hierbas.missing[i]) + hierbas.imp[i]*hierbas.missing[i]
+  hierba_ht.imp[i] ~ dnorm(hierba_ht.z[i], pow(hierba_ht.sd, -2))T(hierba_ht.lower, )
+  hierba_ht[i] <- hierba_ht.z[i] * (1 - hierba_ht.missing[i]) + hierba_ht.imp[i]*hierba_ht.missing[i]
+  arbusto.imp[i] ~ dnorm(arbusto.z[i], pow(arbusto.sd, -2))T(arbusto.lower, arbusto.upper)
+  arbusto[i] <- arbusto.z[i]*(1-arbusto.missing[i]) + arbusto.imp[i]*arbusto.missing[i]
+  pastos.imp[i] ~ dnorm(pastos.z[i], pow(pastos.sd[i], -2))T(pastos.lower, pastos.upper)
+  pastos[i] <- pastos.z[i]*(1-pastos.missing[i]) + pastos.imp[i]*pastos.missing[i]
+  pasto_ht.imp[i] ~ dnorm(pasto_ht.z[i], pow(pasto_ht.sd, -2))T(pasto_ht.lower, )
+  pasto_ht[i] <- pasto_ht.z[i]*(1-pasto_ht.missing[i]) + pasto_ht.imp[i]*pasto_ht.missing[i]
+  salsola.imp[i] ~ dnorm(salsola.z[i], pow(salsola.sd, -2))T(salsola.lower, salsola.upper)
+  salsola[i] <- salsola.z[i]*(1-salsola.missing[i]) + salsola.imp[i]*salsola.missing[i]
+  salsola_ht.imp[i] ~ dnorm(salsola_ht.z[i], pow(salsola_ht.sd, -2))T(salsola_ht.lower, )
+  salsola_ht[i] <- salsola_ht.z[i]*(1-salsola_ht.missing[i]) + salsola_ht.imp[i]*salsola_ht.missing[i]
+  arbusto_cv.imp[i] ~ dnorm(arbusto_cv.z[i], pow(arbusto_cv.sd, -2))T(arbusto_cv.lower, )
+  arbusto_cv[i] <- arbusto_cv.z[i]*(1-arbusto_cv.missing[i]) + arbusto_cv.imp[i]*arbusto_cv.missing[i]
+
+  for(j in 1:nDOS) {
+    within_period[i, j] <- max(0, P.trans - time_since_depl[i, j]) / (P.trans - time_since_depl[i, j])
+    logit(S[i, j]) <- B0[SiteInd[i], SeasonInd[i]] + B.DOS*DOS[i, j] +
+      B.DOS2*pow(DOS[i, j], 2) + B.trans * after_depl[i, j] * within_period[i, j] +
+      B.hierba_ht * hierba_ht[i] + B.arbusto * arbusto[i] + B.pastos * pastos[i] +
+      B.pasto_ht * pasto_ht[i] + B.salsola * salsola[i] + B.salsola_ht * salsola_ht[i] +
+      B.arbusto_cv * arbusto_cv[i] + B.peso * peso.z[i]
+    }
+  }
+}

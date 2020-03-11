@@ -9,7 +9,9 @@ minDOS <- 317 # Sets first day of season - currently corresponds with 11/12/2012
 dat.banding <- read.csv("wintersurvival_accessDBs/ExportedTables/Anillamiento_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday) %>%
-  filter(captura != 6)
+  filter(captura != 6) %>%
+  arrange(Site, Season, anillo, DOY) %>%
+  distinct(Site, Season, anillo, .keep_all = T)
 dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_Todos_all_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday)
@@ -18,6 +20,7 @@ dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forI
   mutate(DOYdepl = fecha_depl %>% mdy %>% yday)
 dat.banding <- dat.banding %>%
   mutate(Tagged = anillo %in% dat.trans$anillo)
+dat.veg <- read.csv("Veg_individual.csv", header = T, stringsAsFactors = F)
 
 # Convert all day of years to day of season #
 dat.banding$DOS <- dat.banding$DOY
@@ -230,9 +233,10 @@ for(sp in species[1:2]) {
   
   # Add tagging day #
   Covs <- Covs %>% left_join(dat.banding %>%
-                                 select(Site, Season, anillo, DOSdepl) %>%
+                                 select(Site, Season, anillo, DOSdepl, grasa, peso) %>%
                                  unique,
-                               by = c("Site", "Season", "anillo"))
+                               by = c("Site", "Season", "anillo")) %>%
+    left_join(dat.veg, by = c("Site", "Season", "anillo"))
   Covs$DOSdepl[which(is.na(Covs$DOSdepl))] <- 999
 
   # Remove observations with zero active monitoring days (0s or 1s).
