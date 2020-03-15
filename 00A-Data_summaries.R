@@ -11,7 +11,7 @@ dat.banding <- read.csv("wintersurvival_accessDBs/ExportedTables/Anillamiento_fo
   mutate(DOY = fecha %>% mdy %>% yday) %>%
   filter(captura != 6) %>%
   arrange(Site, Season, anillo, DOY) %>%
-  distinct(Site, Season, anillo, .keep_all = T)
+  distinct(Site, Season, anillo, DOY, .keep_all = T) # Not sure if I need this. Inherited from data compilation script, but added in DOY because needed for data summaries of mass change.
 dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_Todos_all_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday)
@@ -57,10 +57,6 @@ dat.banding <- dat.banding %>%
 
 # Temp corrections #
 dat.locations <- dat.locations %>%
-  filter(!(anillo == 240112681 & Season == "2017-2018" & Site == "Janos" & DOS == 27)) # temp removal of erroneous mortality event.
-dat.locations <- dat.locations %>%
-  filter(!(anillo == 255009988 & Site == "VACO" & Season == "2017-2018" & DOS == 35 & survive == 0)) # temp removal of erroneous mortality event.
-dat.locations <- dat.locations %>%
   filter(!(anillo == 111111312 & Site == "VACO" & Season == "2018-2019" & DOS > 89)) # Remove extraneous mortality records following the initial observation.
 
 # Get all detection histories by species #
@@ -90,11 +86,22 @@ rm(dlocs, dbands, dloc.detections, detections)
 # cor(dat.banding %>% filter(especie == spp) %>% filter(DOS != -999 & peso != -999) %>% pull(DOS),
 #     dat.banding %>% filter(especie == spp) %>% filter(DOS != -999 & peso != -999)  %>% pull(peso))
 
+# Plot Time of day by mass #
+# spp <- "GRSP"
+# dat.banding <- dat.banding %>%
+#   mutate(hora_dec = (str_sub(hora, 1, 2) %>% as.numeric) +
+#            (str_sub(hora, -2, -1) %>% as.numeric) / 60)
+# dat.banding$hora_dec[which(dat.banding$hora == -9999)] <- -999
+# plot(dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999) %>% pull(hora_dec),
+#      dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
+# cor(dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999) %>% pull(hora_dec),
+#     dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
+
 # Data summaries #
 cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "nMort",
           "Mean_Days_radiotracked", "Min_Days_radiotracked", "Max_Days_radiotracked",
-          "n_MassChange_Tagged", "Mean_MassChange_Tagged", "Min_MassChange_Tagged", "Max_MassChange_Tagged",
-          "n_MassChange_Untagged", "Mean_MassChange_Untagged", "Min_MassChange_Untagged", "Max_MassChange_Untagged")
+          "n_PercMassChange_Tagged", "Mean_PercMassChange_Tagged", "Min_PercMassChange_Tagged", "Max_PercMassChange_Tagged",
+          "n_PercMassChange_Untagged", "Mean_PercMassChange_Untagged", "Min_PercMassChange_Untagged", "Max_PercMassChange_Untagged")
 out <- matrix(NA, nrow = length(species), ncol = length(cols),
               dimnames = list(species, cols))
 
@@ -133,11 +140,12 @@ for(spp in species) {
     mutate(firstMass = first(peso), lastMass = last(peso)) %>%
     summarise(ncapt = n(), firstMass = first(firstMass), lastMass = first(lastMass)) %>%
     filter(ncapt > 1) %>%
-    mutate(deltaMass = lastMass - firstMass) %>% pull(deltaMass)
-  out[spp, "n_MassChange_Tagged"] <- length(massChange)
-  out[spp, "Mean_MassChange_Tagged"] <- mean(massChange)
-  out[spp, "Min_MassChange_Tagged"] <- min(massChange)
-  out[spp, "Max_MassChange_Tagged"] <- max(massChange)
+    #mutate(deltaMass = lastMass - firstMass) %>% pull(deltaMass)
+    mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
+  out[spp, "n_PercMassChange_Tagged"] <- length(massChange)
+  out[spp, "Mean_PercMassChange_Tagged"] <- mean(massChange)
+  out[spp, "Min_PercMassChange_Tagged"] <- min(massChange)
+  out[spp, "Max_PercMassChange_Tagged"] <- max(massChange)
   massChange <- dat.banding %>%
     filter(especie == spp & !Tagged & peso != -999) %>%
     arrange(Season, anillo, DOS) %>%
@@ -145,13 +153,13 @@ for(spp in species) {
     mutate(firstMass = first(peso), lastMass = last(peso)) %>%
     summarise(ncapt = n(), firstMass = first(firstMass), lastMass = first(lastMass)) %>%
     filter(ncapt > 1) %>%
-    mutate(deltaMass = lastMass - firstMass) %>% pull(deltaMass)
-  out[spp, "n_MassChange_Untagged"] <- length(massChange)
-  out[spp, "Mean_MassChange_Untagged"] <- mean(massChange)
-  out[spp, "Min_MassChange_Untagged"] <- min(massChange)
-  out[spp, "Max_MassChange_Untagged"] <- max(massChange)
+    mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
+  out[spp, "n_PercMassChange_Untagged"] <- length(massChange)
+  out[spp, "Mean_PercMassChange_Untagged"] <- mean(massChange)
+  out[spp, "Min_PercMassChange_Untagged"] <- min(massChange)
+  out[spp, "Max_PercMassChange_Untagged"] <- max(massChange)
 }
-#write.csv(out, "Summary.csv", row.names = T)
+write.csv(out, "Summary.csv", row.names = T)
 
 sites <- unique(dat.banding$Site)
 nrows <- length(species) * length(sites)
@@ -169,119 +177,4 @@ for(spp in species) for(sit in sites) {
   if(length(mass) > 1) out$SD[counter] <- sd(mass)
   counter <- counter + 1
 }
-#write.csv(out, "Summary_mass_by_site.csv", row.names = T)
-
-# Compile capture histories and corresponding table of covariates and indices for analysis #
-for(sp in species[1:2]) {
-  dets <- str_c("detections.", sp) %>% # Get raw detections
-    as.name %>% eval %>%
-    arrange(Site, Season, anillo, DOS)
-  
-  obsRaw <- dets %>% slice(1:(nrow(dets) - 1)) %>% # Put detections into interval format (intermediate processing step)
-    bind_cols(
-      dets %>% slice(2:nrow(dets))
-    ) %>%
-    filter(anillo1 == anillo &
-             Site1 == Site &
-             Season1 == Season &
-             DOS1 > DOS) %>%
-    mutate(Indiv = as.factor(anillo) %>% as.integer(),
-           SiteInd = as.factor(Site) %>% as.integer(),
-           SeasonInd = as.factor(Season) %>% as.integer(),
-           IntLength = DOS1 - DOS) %>%
-    select(anillo, Indiv, Site, SiteInd, Season, SeasonInd, DOS, survive1, IntLength) %>%
-    arrange(Site, Season, anillo, DOS) %>%
-    rename(DOSst = DOS, survive = survive1)
-  
-  # Build observation ID tables and data matrices for each species.
-  Covs <- obsRaw %>% select(Site, SiteInd, Season, SeasonInd, anillo, Indiv) %>% unique
-  ymat <- matrix(NA, nrow = nrow(Covs), ncol = max(dets$DOS))
-  for(i in 1:nrow(Covs)) {
-    obs <- obsRaw %>% filter(Indiv == Covs$Indiv[i] &
-                               SiteInd == Covs$SiteInd[i] &
-                               SeasonInd == Covs$SeasonInd[i] &
-                               survive != 9)
-    if(nrow(obs) > 0) {
-      firstDay <- min(obs$DOSst)
-      penultimateDay <- max(obs$DOSst)
-      lastDay <- max(obs$DOSst) + obs$IntLength[which(obs$DOSst == max(obs$DOSst))]
-      if(!any(obs$survive == 0)) ymat[i, firstDay:lastDay] <- 1
-      if(any(obs$survive == 0)) {
-        if(sum(obs$survive == 0) == 1 &
-           which(obs$survive == 0) == which(obs$DOSst == max(obs$DOSst))) {
-          ymat[i, firstDay:penultimateDay] <- 1
-          ymat[i, lastDay] <- 0
-          } else {
-            stop("Error in survival history - more than one mortality or mortality not at the end.")
-          }
-      }
-    # Stick 9s into the data matrix where present.
-    obs9s <- obsRaw %>% filter(Indiv == Covs$Indiv[i] &
-                                 SiteInd == Covs$SiteInd[i] &
-                                 SeasonInd == Covs$SeasonInd[i] &
-                                 survive == 9)
-    if(nrow(obs9s) > 0) for(ii in nrow(obs9s):1) {
-      firstDay9 <- obs9s$DOSst[ii]
-      lastDay9 <- obs9s$DOSst[ii] + obs9s$IntLength[ii]
-      if(lastDay9 == lastDay) {
-        ymat[i, (firstDay9 + 1):lastDay9] <- 9
-        lastDay <- firstDay9
-      }
-    }
-    }
-  }
-  
-  # Add tagging day #
-  Covs <- Covs %>% left_join(dat.banding %>%
-                                 select(Site, Season, anillo, DOSdepl, grasa, peso) %>%
-                                 unique,
-                               by = c("Site", "Season", "anillo")) %>%
-    left_join(dat.veg, by = c("Site", "Season", "anillo"))
-  Covs$DOSdepl[which(is.na(Covs$DOSdepl))] <- 999
-
-  # Remove observations with zero active monitoring days (0s or 1s).
-  ind.rm <- which(apply(ymat, 1, function(x) any(x %in% c(0, 1))) == F)
-  ymat <- ymat[-ind.rm, ]
-  Covs <- Covs %>% slice(-ind.rm)
-  rm(ind.rm)
-  
-  # Identify and store first and last days seen for each individual in each season.
-  Covs <- Covs %>%
-    mutate(firstDay = apply(ymat, 1, function(x) which(!is.na(x))[1]),
-           lastDay = apply(ymat, 1, function(x) {
-             active <- which(!is.na(x))
-             return(active[length(active)])
-             }))
-  ymat[which(ymat == 9)] <- NA
-  Covs$firstDay <- apply(ymat, 1, function(x) which(!is.na(x))[1]) # Recalculate so that first days do not precede the first active day.
-  
-  # Gather final data objects and store.
-  dat <- list(Covs = Covs, ymat = ymat)
-  assign(str_c("data.", sp), dat)
-}
-
-rm(dets, out, cols, counter, sit, sp, spp, mass, massChange, nrows, ind.afterD31, ind.beforeD31, daysMonitored,
-   obs, obs9s, dat, Covs, obsRaw, ymat, i, ii, firstDay, lastDay, penultimateDay, firstDay9, lastDay9)
-save.image("Data_compiled.RData")
-
-# # Compile detection history matrix for review #
-# season_days <- dat$season_day %>%
-#   unique() %>% sort
-# bands <- dat$band %>% unique %>% sort
-# out <- matrix(NA, nrow = length(bands), ncol = length(season_days),
-#               dimnames = list(bands, season_days))
-# for(day in season_days) {
-#   obs <- dat %>% filter(season_day == day) %>%
-#     mutate(survive = as.character(survive)) %>%
-#     mutate(survive = replace(survive, which(is.na(survive)), "NDet")) %>%
-#     group_by(band, season_day) %>%
-#     summarise(survive = min(survive))
-#   out[as.character(obs$band), day] <- obs$survive
-# }
-# row.labs <- dat %>%
-#   select(band, species) %>%
-#   unique %>%
-#   arrange(band) %>%
-#   mutate(lab = str_c(species, band, sep = "_")) %>%
-#   pull(lab)
-# out <- out
+write.csv(out, "Summary_mass_by_site.csv", row.names = T)
