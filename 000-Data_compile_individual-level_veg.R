@@ -20,7 +20,7 @@ dat.veg <- read.csv("wintersurvival_accessDBs/ExportedTables/Vegetacion_forImpor
          pasto_ht = estatura_promedia_pasto,
          salsola_ht = estatura_promedia_salsola) %>%
   select(Site, Season, waypoint, Latitude, Longitude, tipo, hierbas, hierba_ht, arbusto, arbusto_ht,
-         pastos, pasto_ht, salsola, salsola_ht, desnudo) %>% # Too many missing values for robel - leaving it out unless & until instructed otherwise.
+         pastos, pasto_ht, salsola, salsola_ht, desnudo, otra, otra1) %>% # Too many missing values for robel - leaving it out unless & until instructed otherwise.
   mutate(hierbas = replace(hierbas, which(hierbas == -999), NA), # Set missing values to NA to prep for summarization.
          hierba_ht = replace(hierba_ht, which(hierba_ht == -999), NA),
          arbusto = replace(arbusto, which(arbusto == -999), NA),
@@ -29,7 +29,9 @@ dat.veg <- read.csv("wintersurvival_accessDBs/ExportedTables/Vegetacion_forImpor
          pasto_ht = replace(pasto_ht, which(pasto_ht == -999), NA),
          salsola = replace(salsola, which(salsola == -999), NA),
          salsola_ht = replace(salsola_ht, which(salsola_ht == -999), NA),
-         desnudo = replace(desnudo, which(desnudo == -999), NA))
+         desnudo = replace(desnudo, which(desnudo == -999), NA),
+         otra = replace(otra, which(otra == -999), NA),
+         otra1 = replace(otra1, which(otra1 %in% c("9999", "NULL")), NA))
 dat.veg.bird <- dat.veg %>%
   filter(tipo == "bird")
 dat.veg.grid <- dat.veg %>%
@@ -40,7 +42,7 @@ dat.veg.grid <- dat.veg %>%
 dat.locations <- dat.locations %>%
   left_join(dat.veg.bird %>%
               select(Site, Season, waypoint, hierbas, hierba_ht, arbusto, arbusto_ht,
-                     pastos, pasto_ht, salsola, salsola_ht, desnudo),
+                     pastos, pasto_ht, salsola, salsola_ht, otra, otra1, desnudo),
             by = c("Site", "Season", "waypoint"))
 
 # 2. Join grid veg to location records where present and within 'maxD.grid.join'.
@@ -49,9 +51,11 @@ for(i in 1:nrow(Site_Season_combos)) {
   locs <- dat.locations %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
   veg <- dat.veg.grid %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
   names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
-                                     "pastos", "pasto_ht", "salsola", "salsola_ht", "desnudo"))] <-
+                                     "pastos", "pasto_ht", "salsola", "salsola_ht",
+                                     "otra", "otra1", "desnudo"))] <-
     str_c(names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
-                                       "pastos", "pasto_ht", "salsola", "salsola_ht", "desnudo"))], "_grid")
+                                       "pastos", "pasto_ht", "salsola", "salsola_ht",
+                                       "otra", "otra1", "desnudo"))], "_grid")
   if(nrow(veg) > 0) {
     D <- distm(locs[, c("Longitude", "Latitude")], veg[, c("Longitude", "Latitude")])
     minD <- apply(D, 1, min)
@@ -175,5 +179,10 @@ trim <- (dat.indveg %>%
   apply(1, function(x) sum(!is.na(x)))) > 0
 trim.ind <- which(trim)
 dat.indveg <- dat.indveg %>% slice(trim.ind)
+
+# 7. Attach drone variables
+dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, stringsAsFactors = F) %>%
+  filter(!is.na(Distance_to_Fence)) %>% # Removes records with no data at all.
+  select(Site, Season, anillo, )
 
 write.csv(dat.indveg, "Veg_individual.csv", row.names = F)
