@@ -1,5 +1,4 @@
-library(dplyr)
-library(stringr)
+library(tidyverse)
 library(lubridate)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
@@ -21,6 +20,7 @@ dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forI
 dat.banding <- dat.banding %>%
   mutate(Tagged = anillo %in% dat.trans$anillo)
 dat.veg <- read.csv("Veg_individual.csv", header = T, stringsAsFactors = F)
+dat.drone <- read.csv("Drone_individual.csv", header = T, stringsAsFactors = F)
 
 # Convert all day of years to day of season #
 dat.banding$DOS <- dat.banding$DOY
@@ -96,6 +96,7 @@ rm(dlocs, dbands, dloc.detections, detections)
 #      dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
 # cor(dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999) %>% pull(hora_dec),
 #     dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
+# rm(out, cols, counter, sit, spp, mass, massChange, nrows, daysMonitored)
 
 # Compile capture histories and corresponding table of covariates and indices for analysis #
 for(sp in species[1:2]) {
@@ -163,7 +164,8 @@ for(sp in species[1:2]) {
                                distinct(Site, Season, anillo, DOS, .keep_all = T) %>%
                                select(Site, Season, anillo, DOSdepl, grasa, peso),
                                by = c("Site", "Season", "anillo")) %>%
-    left_join(dat.veg, by = c("Site", "Season", "anillo"))
+    left_join(dat.veg, by = c("Site", "Season", "anillo")) %>%
+    left_join(dat.drone, by = c("Site", "Season", "anillo"))
   Covs$DOSdepl[which(is.na(Covs$DOSdepl))] <- 999
 
   # Remove observations with zero active monitoring days (0s or 1s).
@@ -187,8 +189,8 @@ for(sp in species[1:2]) {
   assign(str_c("data.", sp), dat)
 }
 
-rm(dets, out, cols, counter, sit, sp, spp, mass, massChange, nrows, ind.afterD31, ind.beforeD31, daysMonitored,
-   obs, obs9s, dat, Covs, obsRaw, ymat, i, ii, firstDay, lastDay, penultimateDay, firstDay9, lastDay9)
+rm(dets, sp, ind.afterD31, ind.beforeD31, obs, obs9s, dat, Covs, obsRaw,
+   ymat, i, ii, firstDay, lastDay, penultimateDay, firstDay9, lastDay9)
 save.image("Data_compiled.RData")
 
 # # Compile detection history matrix for review #

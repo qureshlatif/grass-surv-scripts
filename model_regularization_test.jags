@@ -1,0 +1,36 @@
+model {
+
+#Priors
+B0 ~ dnorm(0, 0.6666667)
+B.DOS ~ dnorm(0, 0.6666667)
+B.DOS2 ~ dnorm(0, 0.6666667)
+
+# Drone effects #
+for(b in 1:nDroneCovs) {
+  B.drone[b] ~ dnorm(0, 0.6666667)
+  B2.drone[b] ~ dnorm(0, 0.6666667)
+}
+for(b in 1:nDroneCovCVs) {
+  BCV.drone[b] ~ dnorm(0, 0.6666667)
+}
+
+# Individual characteristics #
+B.peso ~ dnorm(0, 0.3)
+
+for(i in 1:nBird) {
+  for(b in 1:nDroneCovs) {
+    Bxz.drone[i, b] <- B.drone[b] * drone.z[i, b]
+    B2xz.drone[i, b] <- B2.drone[b] * pow(drone.z[i, b], 2)
+  }
+  for(b in 1:nDroneCovCVs) {
+    BCVxz.drone[i, b] <- BCV.drone[b] * droneCV.z[i, b]
+  }
+  for(j in (first[i] + 1):last[i]) {
+    ymat[i, j] ~ dbern(S[i, j]*ymat[i, j-1])
+    }
+  for(j in 1:nDOS) {
+    logit(S[i, j]) <- B0 + B.DOS2*pow(DOS[i, j], 2) +
+      sum(Bxz.drone[i,]) + sum(B2xz.drone[i, ]) + sum(BCVxz.drone[i, ]) + B.peso * peso.z[i]
+    }
+  }
+}

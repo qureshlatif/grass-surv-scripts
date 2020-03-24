@@ -1,4 +1,5 @@
-library(jagsUI)
+#library(jagsUI)
+library(saveJAGS)
 library(stringr)
 library(dplyr)
 
@@ -7,8 +8,8 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled.RData")
 
 #________ Script inputs________#
-spp <- "GRSP" # BAIS or GRSP
-model.file <- "grass-surv-scripts/model_prototype_Veg.jags"
+spp <- "BAIS" # BAIS or GRSP
+model.file <- "grass-surv-scripts/model_regularization_test.jags"
 
 # MCMC values
 nc <- 3 # number of chains
@@ -16,13 +17,13 @@ nb <- 1000 # burn in
 ni <- 6000 # number of iterations
 nt <- 10 # thinning
 
-save.out <- str_c("mod_prototype_Veg_", spp)
+save.out <- str_c("mod_regularization_test_", spp)
 #______________________________#
-
 
 # Data objects to send to JAGS
 data.nams <- c("ymat", "first", "last", "nBird", "nSite", "nSeason", "nDOS",
              "SeasonInd", "SiteInd", "DOS", "time_since_depl", "after_depl",
+             "nDroneCovs", "nDroneCovCVs",
              
              "hierbas.z", "hierbas.missing", "hierbas.sd", "hierbas.lower", "hierbas.upper",
              "hierba_ht.z", "hierba_ht.missing", "hierba_ht.sd", "hierba_ht.lower",
@@ -33,12 +34,15 @@ data.nams <- c("ymat", "first", "last", "nBird", "nSite", "nSeason", "nDOS",
              "salsola_ht.z", "salsola_ht.missing", "salsola_ht.sd", "salsola_ht.lower",
              "arbusto_cv.z", "arbusto_cv.missing", "arbusto_cv.sd", "arbusto_cv.lower",
              
+             "drone.z", "droneCV.z",
+             
              "peso.z")
 
 # Stuff to save from JAGS
-parameters <- c("B0.mean", "sigma.B0", "B0", "B.DOS", "B.DOS2", "B.trans", "P.trans",
+parameters <- c("B0", "B.DOS", "B.DOS2", "B.trans", "P.trans",
                 "B.hierbas", "B.hierba_ht", "B.arbusto", "B.pastos", "B.pasto_ht",
-                "B.salsola", "B.salsola_ht", "B.arbusto_cv", "B.peso")
+                "B.salsola", "B.salsola_ht", "B.arbusto_cv", "B.drone", "B2.drone",
+                "BCV.drone", "B.peso")
 
 # Function for setting initial values in JAGS
 inits <- function()
@@ -133,6 +137,22 @@ arbusto_cv.sd <- sd(arbusto_cv.z, na.rm = T)
 arbusto_cv.z[which(is.na(arbusto_cv.z))] <- mean(arbusto_cv.z, na.rm = T)
 arbusto_cv.lower <- (0 - mean(arbusto_cv.x, na.rm = T)) / sd(arbusto_cv.x, na.rm = T)
 
+drone.z <- data.spp$Covs %>% ungroup() %>%
+  select(Mesquite_5m:Distance_to_Fence) %>%
+  select(contains("_100m"), Distance_to_Fence) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
+  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
+  data.matrix()
+nDroneCovs <- ncol(drone.z)
+
+droneCV.z <- data.spp$Covs %>%
+  select(Mesquite_5m_CV:Mean_Shrub_Height_500m_CV) %>%
+  select(contains("_100m")) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
+  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
+  data.matrix()
+nDroneCovCVs <- ncol(droneCV.z)
+
 peso.x <- data.spp$Covs$peso
 peso.z <- peso.x %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
@@ -143,20 +163,63 @@ for(i in 1:length(data.nams)) data[[length(data) + 1]] <- eval(as.name(data.nams
 names(data) <- data.nams
 
 st.time <- Sys.time()
-out <- jagsUI(data, inits, parameters.to.save = parameters, model.file, n.thin=nt, n.chains=nc,
-              n.burnin=nb, n.iter=ni, parallel=TRUE)
+#out <- jagsUI(data, inits, parameters.to.save = parameters, model.file, n.thin=nt, n.chains=nc,
+#              n.burnin=nb, n.iter=ni, parallel=TRUE)
+if(!file.exists(str_c("saveJAGS/", save.out))) dir.create(str_c("saveJAGS/", save.out))
+out <- saveJAGS(data = data, inits = inits, params = parameters, modelFile = model.file, thin = nt, chains = nc, # taking up saveJAGS instead to save as we go.
+                burnin = nb, sample2save = ((ni/nt)/50), nSaves = 50, fileStub = str_c("saveJAGS/", save.out, "/modsave"))
 end.time <- Sys.time()
 run.time <- end.time - st.time
 run.time
 rm(st.time,end.time)
 
-# Check the basics
-max(out$summary[,"Rhat"])
-#sort(out$summary[,"Rhat"], decreasing = T)[1:100]
+out <- resumeJAGS(fileStub = str_c("saveJAGS/", save.out, "/modsave"), nSaves = 40)
 
-min(out$summary[,"n.eff"])
-#sort(out$summary[,"n.eff"])[1:50]
+# Gather, combine, and summarize JAGS saves from hard drive #
+rsav <- recoverSaves(str_c("saveJAGS/", save.out, "/modsave"))
+mod.raw <- combineSaves(rsav)
+Rhat <- gelman.diag(mod.raw)$psrf[, 2]
+neff <- effectiveSize(mod.raw)
+traceplot(mod.raw[, "B.drone[4]"])
+
+# Check the basics
+#max(out$summary[,"Rhat"])
+max(Rhat)
+sort(Rhat, decreasing = T)
+
+#min(out$summary[,"n.eff"])
+min(neff)
+sort(neff)
+
+# traceplots #
+pdf(file=str_c(save.out, '_traceplots.pdf'))
+plot.params <- params.saved <- parameters[c(1:3,14:17)]
+for(i in 1:length(plot.params)) {
+  par.i <- plot.params[i]
+  pars.lst <- params.saved[which(substring(params.saved,1,nchar(par.i))==par.i)]
+  pars.cols <- c()
+  for(j in 1:length(pars.lst)) {
+    pars.cols <- c(pars.cols,which(substring(colnames(mod.raw$AA),1,nchar(pars.lst[j]))==pars.lst[j]))
+  }
+  
+  if(length(pars.cols)<=9) {
+    par(mfrow=c(ceiling(sqrt(length(pars.cols))),ceiling(sqrt(length(pars.cols)))),xpd=NA,mar=c(5,4,1,1))
+    for(j in pars.cols) {
+      matplot(cbind(mod.raw$AA[,j],mod.raw$AB[,j],mod.raw$AC[,j]),type='l',lty=1,ylab=colnames(mod.raw$AA)[j])
+    }
+  }
+  if(length(pars.cols)>9) {
+    for(j in 1:length(pars.cols)) {
+      if((j-1)%%9==0) {par(mfrow=c(3,3),xpd=NA,mar=c(5,4,1,1))}
+      matplot(cbind(mod.raw$AA[,pars.cols[j]],mod.raw$AB[,pars.cols[j]],mod.raw$AC[,pars.cols[j]]),type='l',lty=1,ylab=colnames(mod.raw$AA)[pars.cols[j]])
+    }
+  }
+}
+dev.off()
 
 # Save output
 library(R.utils)
-saveObject(out, save.out)
+#saveObject(out, save.out)
+mod <- simsList(mod.raw)
+mod <- list(sims.list = mod, Rhat = Rhat, neff = neff)
+saveObject(mod, save.out)

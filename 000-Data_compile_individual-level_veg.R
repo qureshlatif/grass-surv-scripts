@@ -1,6 +1,4 @@
-library(dplyr)
-library(stringr)
-library(lubridate)
+library(tidyverse)
 library(geosphere)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
@@ -31,7 +29,9 @@ dat.veg <- read.csv("wintersurvival_accessDBs/ExportedTables/Vegetacion_forImpor
          salsola_ht = replace(salsola_ht, which(salsola_ht == -999), NA),
          desnudo = replace(desnudo, which(desnudo == -999), NA),
          otra = replace(otra, which(otra == -999), NA),
-         otra1 = replace(otra1, which(otra1 %in% c("9999", "NULL")), NA))
+         otra1 = replace(otra1, which(otra1 %in% c("9999", "NULL")), NA)) %>%
+  mutate(otra1 = replace(otra1, which(otra1 == "MA"), "VS") %>%
+           as.factor)
 dat.veg.bird <- dat.veg %>%
   filter(tipo == "bird")
 dat.veg.grid <- dat.veg %>%
@@ -77,6 +77,8 @@ rm(dat.locs, locs, veg, D, minD, minD.ind, veg.keep, i, Site_Season_combos)
 # 3. Summarize (mean, SD?) bird- and grid-based versions of covariates.
 dat.indveg <- dat.locations %>%
   group_by(Site, Season, anillo) %>%
+  mutate(otra1 = fct_infreq(otra1),
+         otra1_grid = fct_infreq(otra1_grid)) %>%
   summarise(hierbas = mean(hierbas, na.rm = T),
             hierba_ht = mean(hierba_ht, na.rm = T),
             arbusto = mean(arbusto, na.rm = T),
@@ -85,6 +87,8 @@ dat.indveg <- dat.locations %>%
             pasto_ht = mean(pasto_ht, na.rm = T),
             salsola = mean(salsola, na.rm = T),
             salsola_ht = mean(salsola_ht, na.rm = T),
+            otra = mean(otra, na.rm = T),
+            otra1 = first(otra1),
             desnudo = mean(desnudo, na.rm = T),
             hierbas_grid = mean(hierbas_grid, na.rm = T),
             hierba_ht_grid = mean(hierba_ht_grid, na.rm = T),
@@ -94,6 +98,8 @@ dat.indveg <- dat.locations %>%
             pasto_ht_grid = mean(pasto_ht_grid, na.rm = T),
             salsola_grid = mean(salsola_grid, na.rm = T),
             salsola_ht_grid = mean(salsola_ht_grid, na.rm = T),
+            otra_grid = mean(otra_grid, na.rm = T),
+            otra1_grid = first(otra1_grid),
             desnudo_grid = mean(desnudo_grid, na.rm = T)) %>%
   left_join(dat.locations %>%
               group_by(Site, Season, anillo) %>%
@@ -114,6 +120,8 @@ dat.indveg <- dat.locations %>%
                         pasto_ht_n = sum(!is.na(pasto_ht)),
                         salsola_n = sum(!is.na(salsola)),
                         salsola_ht_n = sum(!is.na(salsola_ht)),
+                        otra_n = sum(!is.na(otra)),
+                        otra1_n = length(unique(otra1)),
                         desnudo_n = sum(!is.na(desnudo)),
                         hierbas_grid_n = sum(!is.na(hierbas_grid)),
                         hierba_ht_grid_n = sum(!is.na(hierba_ht_grid)),
@@ -123,6 +131,8 @@ dat.indveg <- dat.locations %>%
                         pasto_ht_grid_n = sum(!is.na(pasto_ht_grid)),
                         salsola_grid_n = sum(!is.na(salsola_grid)),
                         salsola_ht_grid_n = sum(!is.na(salsola_ht_grid)),
+                        otra_grid_n = sum(!is.na(otra_grid)),
+                        otra1_grid_n = length(unique(otra1_grid)),
                         desnudo_grid_n = sum(!is.na(desnudo_grid))),
             by = c("Site", "Season", "anillo")) %>%
   ungroup %>%
@@ -141,7 +151,7 @@ dat.indveg <- dat.locations %>%
 
 # 4. Calculate correlations between bird- and grid-based versions of covariates in years when both were present.
 vars <- c("hierbas", "hierba_ht", "arbusto", "arbusto_cv", "arbusto_ht", "pastos",
-          "pastos_cv", "pasto_ht", "pasto_ht_cv", "salsola", "salsola_ht", "desnudo")
+          "pastos_cv", "pasto_ht", "pasto_ht_cv", "salsola", "salsola_ht", "otra", "desnudo")
 cols <- c("cor", "cor10")
 out_cor <- matrix(NA, nrow = length(vars), ncol = length(cols),
                   dimnames = list(vars, cols))
@@ -179,10 +189,5 @@ trim <- (dat.indveg %>%
   apply(1, function(x) sum(!is.na(x)))) > 0
 trim.ind <- which(trim)
 dat.indveg <- dat.indveg %>% slice(trim.ind)
-
-# 7. Attach drone variables
-dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, stringsAsFactors = F) %>%
-  filter(!is.na(Distance_to_Fence)) %>% # Removes records with no data at all.
-  select(Site, Season, anillo, )
 
 write.csv(dat.indveg, "Veg_individual.csv", row.names = F)
