@@ -16,7 +16,11 @@ dat <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, stringsA
   mutate(X100m_Mesquite = ifelse(is.na(X100m_Mesquite), X100m_Mimosa, X100m_Mesquite)) %>% select(-X100m_Mimosa) %>%
   mutate(X200m_Mesquite = ifelse(is.na(X200m_Mesquite), X200m_Mimosa, X200m_Mesquite)) %>% select(-X200m_Mimosa) %>%
   mutate(X300m_Mesquite = ifelse(is.na(X300m_Mesquite), X300m_Mimosa, X300m_Mesquite)) %>% select(-X300m_Mimosa) %>%
-  mutate(X500m_Mesquite = ifelse(is.na(X500m_Mesquite), X500m_Mimosa, X500m_Mesquite)) %>% select(-X500m_Mimosa)
+  mutate(X500m_Mesquite = ifelse(is.na(X500m_Mesquite), X500m_Mimosa, X500m_Mesquite)) %>% select(-X500m_Mimosa) %>%
+  mutate(X5m_Max_Shrub_Height = ifelse(X5m_Max_Shrub_Height == -Inf & Site == "Marfa", 0,
+                                       ifelse(X5m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X5m_Max_Shrub_Height))) %>%
+  mutate(X25m_Max_Shrub_Height = ifelse(X25m_Max_Shrub_Height == -Inf & Site == "Marfa", 0,
+                                        ifelse(X25m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X25m_Max_Shrub_Height)))
 
 cor(dat %>% select(X5m_Mesquite:X500m_Mesquite), use = "complete")
 cor(dat %>% select(X5m_Juniper:X500m_Juniper), use = "complete")
