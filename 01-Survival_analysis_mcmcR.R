@@ -1,15 +1,19 @@
 library(stringr)
 library(dplyr)
 library(QSLpersonal)
+library(tictoc)
+library(Rcpp)
+library(abind)
+library(RcppArmadillo)
 
-#setwd("/home/RMBO.LOCAL/quresh.latif/CPW_beetle")
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-source("grass-surv-scripts/model_surv_censor_mcmc.R")
-n.mcmc=500000
+Rcpp::sourceCpp('grass-surv-scripts/fwdalg.cpp')
+source("grass-surv-scripts/CJS.hmm.cpp.mcmc.R")
+n.mcmc=200000
 save.out <- str_c("mod_mcmcR_test_", spp)
 #______________________________#
 
@@ -60,21 +64,14 @@ peso.z <- peso.x %>%
   array(., c(length(.), nDOS))
 
 X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
-out <- surv.censor.mcmc(Y=ymat, X=X, first=first, last.alive=last.alive,
-                        last=last, n.mcmc=n.mcmc, beta.tune=0.05, n.burnin=10000, n.thin=10)
-matplot(t(out$beta.save),type="l",lty=1) # traceplots
-# for(i in seq(0.04, 0.006, length.out = 10)) {
-#   out <- surv.censor.mcmc(Y=ymat, X=X, first=first, last.alive=last.alive,
-#                           last=last, n.mcmc=n.mcmc, beta.tune=0.01)
-#   matplot(t(out$beta.save),type="l",lty=1, main = str_c("beta.tune = ", i)) # traceplots
-# }
+tic()
+out=CJS.hmm.cpp.mcmc(ymat,X,last.alive,n.mcmc,beta.tune=0.04,s.reg=1)
+toc()
+out$pD
+out$DIC
+matplot(t(out$beta.save),type="l")
 
-library(R.utils)
-saveObject(out, save.out)
+#library(R.utils)
+#saveObject(out, save.out)
 
-# Parameters needed for final model that are not in this one:
-# 1. transmitter effect
-# 2. site X year random effect
-# 3. Missing data imputation
-# 4. Scale selection for drone covariates
-# 5. Additional covariates: field veg, weather, sex, age.
+

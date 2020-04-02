@@ -10,7 +10,8 @@ dat.banding <- read.csv("wintersurvival_accessDBs/ExportedTables/Anillamiento_fo
   mutate(DOY = fecha %>% mdy %>% yday) %>%
   filter(captura != 6) %>%
   arrange(Site, Season, anillo, DOY) %>%
-  distinct(Site, Season, anillo, .keep_all = T) # Not sure why I need this, but locations don't line up with veg without it. Need to investigate further once waypoints are clean.
+  distinct(Site, Season, anillo, .keep_all = T) # Not sure why I need this, but locations don't line up with veg without it.
+                                                # In any case, we have to drop detections prior to radio-tagging, so recaptures are a moot point.
 dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_Todos_all_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday)
