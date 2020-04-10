@@ -3,81 +3,7 @@ library(stringr)
 library(lubridate)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-
-minDOS <- 317 # Sets first day of season - currently corresponds with 11/12/2012
-
-dat.banding <- read.csv("wintersurvival_accessDBs/ExportedTables/Anillamiento_forImport.csv", stringsAsFactors = F) %>%
-  tbl_df() %>%
-  mutate(DOY = fecha %>% mdy %>% yday) %>%
-  filter(captura != 6) %>%
-  arrange(Site, Season, anillo, DOY) %>%
-  distinct(Site, Season, anillo, DOY, .keep_all = T) # Not sure if I need this. Inherited from data compilation script, but added in DOY because needed for data summaries of mass change.
-dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_Todos_all_forImport.csv", stringsAsFactors = F) %>%
-  tbl_df() %>%
-  mutate(DOY = fecha %>% mdy %>% yday)
-dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forImport.csv", stringsAsFactors = F) %>%
-  tbl_df() %>%
-  mutate(DOYdepl = fecha_depl %>% mdy %>% yday)
-dat.banding <- dat.banding %>%
-  mutate(Tagged = anillo %in% dat.trans$anillo)
-dat.veg <- read.csv("Veg_individual.csv", header = T, stringsAsFactors = F)
-
-# Convert all day of years to day of season #
-dat.banding$DOS <- dat.banding$DOY
-ind.beforeD31 <- which(dat.banding$DOY > 200)
-ind.afterD31 <- which(dat.banding$DOY < 200)
-dat.banding$DOS[ind.beforeD31] <- dat.banding$DOS[ind.beforeD31] - (minDOS - 1)
-D31 <- (dat.banding$fecha %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
-dat.banding$DOS[ind.afterD31] <- dat.banding$DOS[ind.afterD31] + D31[ind.afterD31]
-
-dat.locations$DOS <- dat.locations$DOY
-ind.beforeD31 <- which(dat.locations$DOY > 200)
-ind.afterD31 <- which(dat.locations$DOY < 200)
-dat.locations$DOS[ind.beforeD31] <- dat.locations$DOS[ind.beforeD31] - (minDOS - 1)
-D31 <- (dat.locations$fecha %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
-dat.locations$DOS[ind.afterD31] <- dat.locations$DOS[ind.afterD31] + D31[ind.afterD31]
-
-dat.trans$DOSdepl <- dat.trans$DOYdepl
-ind.beforeD31 <- which(dat.trans$DOYdepl > 200)
-ind.afterD31 <- which(dat.trans$DOYdepl < 200)
-dat.trans$DOSdepl[ind.beforeD31] <- dat.trans$DOSdepl[ind.beforeD31] - (minDOS - 1)
-D31 <- (dat.trans$fecha_depl %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
-dat.trans$DOSdepl[ind.afterD31] <- dat.trans$DOSdepl[ind.afterD31] + D31[ind.afterD31]
-rm(D31)
-
-# Get tagging statuses into banding data table.
-dat.banding <- dat.banding %>%
-  left_join( # If transmitter replaced, uses first time transmitter was deployed for date of deployment.
-    dat.trans %>%
-      select(Site, Season, anillo, DOSdepl) %>%
-      group_by(Site, Season, anillo) %>%
-      summarise(DOSdepl = min(DOSdepl)),
-    by = c("Site", "Season", "anillo")) %>%
-  mutate(Tagged = !is.na(DOSdepl))
-
-# Temp corrections #
-dat.locations <- dat.locations %>%
-  filter(!(anillo == 111111312 & Site == "VACO" & Season == "2018-2019" & DOS > 89)) # Remove extraneous mortality records following the initial observation.
-
-# Get all detection histories by species #
-species <- unique(dat.locations$especie)
-for(sp in species) {
-  dlocs <- dat.locations %>% filter(especie == sp) %>%
-    select(anillo, Site, Season, DOS, survive) %>%
-    #filter(survive != 9) %>%
-    mutate(Dataset = "Locations") %>% unique
-  dbands <- dat.banding %>% filter(especie == sp) %>%
-    select(anillo, Site, Season, DOS) %>%
-    mutate(survive = 1, Dataset = "Banding") %>% unique
-  dloc.detections <- str_c(dlocs$anillo, "_", dlocs$DOS, "_", dlocs$Season)
-  dbands <- dbands %>%
-    mutate(detections = str_c(anillo, "_", DOS, "_", Season)) %>%
-    filter(!detections %in% dloc.detections) %>%
-    select(-detections)
-  detections <- dlocs %>% bind_rows(dbands)
-  assign(str_c("detections.", sp), detections)
-}
-rm(dlocs, dbands, dloc.detections, detections)
+load("Data_compiled.RData")
 
 # Plot Day of season by mass #
 # spp <- "BAIS"
@@ -98,7 +24,7 @@ rm(dlocs, dbands, dloc.detections, detections)
 #     dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
 
 # Data summaries #
-cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "prpDaysDet", "nMort",
+cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "prpDaysDet", "nMort", "",
           "Mean_Days_radiotracked", "Min_Days_radiotracked", "Max_Days_radiotracked",
           "n_PercMassChange_Tagged", "Mean_PercMassChange_Tagged", "Min_PercMassChange_Tagged", "Max_PercMassChange_Tagged",
           "n_PercMassChange_Untagged", "Mean_PercMassChange_Untagged", "Min_PercMassChange_Untagged", "Max_PercMassChange_Untagged")

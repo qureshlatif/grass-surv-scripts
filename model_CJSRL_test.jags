@@ -1,0 +1,22 @@
+model {
+
+#Priors
+B0 ~ dnorm(0, 0.6666667)
+
+for(b in 1:ncovs) {
+  B[b] ~ dnorm(0, 0.6666667)
+}
+
+for(i in 1:nBird) {
+  for(b in 1:ncovs) {
+    Bz[i, b] <- B[b] * z[i, b]
+  }
+  for(j in (first[i] + 1):last[i]) {
+    ymat[i, j] ~ dbern(S[i, j]*ymat[i, j-1])
+    }
+  for(j in 1:nDOS) {
+    logit(S[i, j]) <- B0 + B.DOS2*pow(DOS[i, j], 2) +
+      sum(Bxz.drone[i,]) + sum(B2xz.drone[i, ]) + sum(BCVxz.drone[i, ]) + B.peso * peso.z[i]
+    }
+  }
+}

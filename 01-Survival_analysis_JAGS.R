@@ -9,44 +9,24 @@ load("Data_compiled.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-model.file <- "grass-surv-scripts/model_regularization_test.jags"
+model.file <- "grass-surv-scripts/model_CJSRLHomog_test.jags"
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 1000 # burn in
-ni <- 6000 # number of iterations
-nt <- 10 # thinning
+nb <- 10 #1000 # burn in
+ni <- 20 #6000 # number of iterations
+nt <- 1#10 # thinning
 
-save.out <- str_c("mod_regularization_test_", spp)
+save.out <- str_c("mod_CJSRLHomog_test_", spp)
 #______________________________#
 
 # Data objects to send to JAGS
-data.nams <- c("ymat", "first", "last", "nBird", "nSite", "nSeason", "nDOS",
-             "SeasonInd", "SiteInd", "DOS", "time_since_depl", "after_depl",
-             "nDroneCovs", "nDroneCovCVs",
-             
-             "hierbas.z", "hierbas.missing", "hierbas.sd", "hierbas.lower", "hierbas.upper",
-             "hierba_ht.z", "hierba_ht.missing", "hierba_ht.sd", "hierba_ht.lower",
-             "arbusto.z", "arbusto.missing", "arbusto.sd", "arbusto.lower", "arbusto.upper",
-             "pastos.z", "pastos.missing", "pastos.sd", "pastos.lower", "pastos.upper",
-             "pasto_ht.z", "pasto_ht.missing", "pasto_ht.sd", "pasto_ht.lower",
-             "salsola.z", "salsola.missing", "salsola.sd", "salsola.lower", "salsola.upper",
-             "salsola_ht.z", "salsola_ht.missing", "salsola_ht.sd", "salsola_ht.lower",
-             "arbusto_cv.z", "arbusto_cv.missing", "arbusto_cv.sd", "arbusto_cv.lower",
-             
-             "drone.z", "droneCV.z",
-             
-             "peso.z")
+data.nams <- c("Y.alive", "Y.dead", "first", "last",
+               "nBird", "nSite", "nSeason", "nDOS", "ncovs",
+               "SeasonInd", "SiteInd", "X")
 
 # Stuff to save from JAGS
-parameters <- c("B0", "B.DOS", "B.DOS2", "B.trans", "P.trans",
-                "B.hierbas", "B.hierba_ht", "B.arbusto", "B.pastos", "B.pasto_ht",
-                "B.salsola", "B.salsola_ht", "B.arbusto_cv", "B.drone", "B2.drone",
-                "BCV.drone", "B.peso")
-
-# Function for setting initial values in JAGS
-inits <- function()
-  list(B0.mean = rnorm(1, 4.8, 1), sigma.B0 = runif(1), B.DOS = rnorm(1), B.DOS2 = rnorm(1), B.trans = rnorm(1))
+parameters <- c("B0", "B", "p", "psi")
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -62,100 +42,119 @@ nSite <- max(SiteInd)
 
 # Covariates #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
-DOSdepl <- data.spp$Covs$DOSdepl
-time_since_depl <- DOS - DOSdepl
-after_depl <- (time_since_depl > 0)*1
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
+DOS2 <- DOS^2
 
-hierbas.x <- data.spp$Covs$hierbas
-hierbas.z <- hierbas.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-hierbas.missing <- is.na(hierbas.z)*1
-hierbas.sd <- sd(hierbas.z, na.rm = T)
-hierbas.z[which(is.na(hierbas.z))] <- mean(hierbas.z, na.rm = T)
-hierbas.lower <- (0 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
-hierbas.upper <- (100 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
-
-hierba_ht.x <- data.spp$Covs$hierba_ht
-hierba_ht.z <- hierba_ht.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-hierba_ht.missing <- is.na(hierba_ht.z)*1
-hierba_ht.sd <- sd(hierba_ht.z, na.rm = T)
-hierba_ht.z[which(is.na(hierba_ht.z))] <- mean(hierba_ht.z, na.rm = T)
-hierba_ht.lower <- (0 - mean(hierba_ht.x, na.rm = T)) / sd(hierba_ht.x, na.rm = T)
-
-arbusto.x <- data.spp$Covs$arbusto
-arbusto.z <- arbusto.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-arbusto.missing <- is.na(arbusto.z)*1
-arbusto.sd <- sd(arbusto.z, na.rm = T)
-arbusto.z[which(is.na(arbusto.z))] <- mean(arbusto.z, na.rm = T)
-arbusto.lower <- (0 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
-arbusto.upper <- (100 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
-
-pastos.x <- data.spp$Covs$pastos
-pastos.z <- pastos.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-pastos.missing <- is.na(pastos.z)*1
-pastos.sd <- data.spp$Covs$pastos_predsd / sd(pastos.x, na.rm = T)
-pastos.sd[which(is.na(pastos.sd))] <- sd(pastos.z, na.rm = T)
-pastos.z[which(is.na(pastos.z))] <- ((data.spp$Covs$pastos_pred - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T))[which(is.na(pastos.z))]
-pastos.z[which(is.na(pastos.z))] <- mean(pastos.z, na.rm = T)
-pastos.lower <- (0 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
-pastos.upper <- (100 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
-
-pasto_ht.x <- data.spp$Covs$pasto_ht
-pasto_ht.z <- pasto_ht.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-pasto_ht.missing <- is.na(pasto_ht.z)*1
-pasto_ht.sd <- sd(pasto_ht.z, na.rm = T)
-pasto_ht.z[which(is.na(pasto_ht.z))] <- mean(pasto_ht.z, na.rm = T)
-pasto_ht.lower <- (0 - mean(pasto_ht.x, na.rm = T)) / sd(pasto_ht.x, na.rm = T)
-
-salsola.x <- data.spp$Covs$salsola
-salsola.z <- salsola.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-salsola.missing <- is.na(salsola.z)*1
-salsola.sd <- sd(salsola.z, na.rm = T)
-salsola.z[which(is.na(salsola.z))] <- mean(salsola.z, na.rm = T)
-salsola.lower <- (0 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
-salsola.upper <- (100 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
-
-salsola_ht.x <- data.spp$Covs$salsola_ht
-salsola_ht.z <- salsola_ht.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-salsola_ht.missing <- is.na(salsola_ht.z)*1
-salsola_ht.sd <- sd(salsola_ht.z, na.rm = T)
-salsola_ht.z[which(is.na(salsola_ht.z))] <- mean(salsola_ht.z, na.rm = T)
-salsola_ht.lower <- (0 - mean(salsola_ht.x, na.rm = T)) / sd(salsola_ht.x, na.rm = T)
-
-arbusto_cv.x <- data.spp$Covs$arbusto_cv
-arbusto_cv.z <- arbusto_cv.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-arbusto_cv.missing <- is.na(arbusto_cv.z)*1
-arbusto_cv.sd <- sd(arbusto_cv.z, na.rm = T)
-arbusto_cv.z[which(is.na(arbusto_cv.z))] <- mean(arbusto_cv.z, na.rm = T)
-arbusto_cv.lower <- (0 - mean(arbusto_cv.x, na.rm = T)) / sd(arbusto_cv.x, na.rm = T)
+# hierbas.x <- data.spp$Covs$hierbas
+# hierbas.z <- hierbas.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# hierbas.missing <- is.na(hierbas.z)*1
+# hierbas.sd <- sd(hierbas.z, na.rm = T)
+# hierbas.z[which(is.na(hierbas.z))] <- mean(hierbas.z, na.rm = T)
+# hierbas.lower <- (0 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
+# hierbas.upper <- (100 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
+# 
+# hierba_ht.x <- data.spp$Covs$hierba_ht
+# hierba_ht.z <- hierba_ht.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# hierba_ht.missing <- is.na(hierba_ht.z)*1
+# hierba_ht.sd <- sd(hierba_ht.z, na.rm = T)
+# hierba_ht.z[which(is.na(hierba_ht.z))] <- mean(hierba_ht.z, na.rm = T)
+# hierba_ht.lower <- (0 - mean(hierba_ht.x, na.rm = T)) / sd(hierba_ht.x, na.rm = T)
+# 
+# arbusto.x <- data.spp$Covs$arbusto
+# arbusto.z <- arbusto.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# arbusto.missing <- is.na(arbusto.z)*1
+# arbusto.sd <- sd(arbusto.z, na.rm = T)
+# arbusto.z[which(is.na(arbusto.z))] <- mean(arbusto.z, na.rm = T)
+# arbusto.lower <- (0 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
+# arbusto.upper <- (100 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
+# 
+# pastos.x <- data.spp$Covs$pastos
+# pastos.z <- pastos.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# pastos.missing <- is.na(pastos.z)*1
+# pastos.sd <- data.spp$Covs$pastos_predsd / sd(pastos.x, na.rm = T)
+# pastos.sd[which(is.na(pastos.sd))] <- sd(pastos.z, na.rm = T)
+# pastos.z[which(is.na(pastos.z))] <- ((data.spp$Covs$pastos_pred - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T))[which(is.na(pastos.z))]
+# pastos.z[which(is.na(pastos.z))] <- mean(pastos.z, na.rm = T)
+# pastos.lower <- (0 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
+# pastos.upper <- (100 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
+# 
+# pasto_ht.x <- data.spp$Covs$pasto_ht
+# pasto_ht.z <- pasto_ht.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# pasto_ht.missing <- is.na(pasto_ht.z)*1
+# pasto_ht.sd <- sd(pasto_ht.z, na.rm = T)
+# pasto_ht.z[which(is.na(pasto_ht.z))] <- mean(pasto_ht.z, na.rm = T)
+# pasto_ht.lower <- (0 - mean(pasto_ht.x, na.rm = T)) / sd(pasto_ht.x, na.rm = T)
+# 
+# salsola.x <- data.spp$Covs$salsola
+# salsola.z <- salsola.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# salsola.missing <- is.na(salsola.z)*1
+# salsola.sd <- sd(salsola.z, na.rm = T)
+# salsola.z[which(is.na(salsola.z))] <- mean(salsola.z, na.rm = T)
+# salsola.lower <- (0 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
+# salsola.upper <- (100 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
+# 
+# salsola_ht.x <- data.spp$Covs$salsola_ht
+# salsola_ht.z <- salsola_ht.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# salsola_ht.missing <- is.na(salsola_ht.z)*1
+# salsola_ht.sd <- sd(salsola_ht.z, na.rm = T)
+# salsola_ht.z[which(is.na(salsola_ht.z))] <- mean(salsola_ht.z, na.rm = T)
+# salsola_ht.lower <- (0 - mean(salsola_ht.x, na.rm = T)) / sd(salsola_ht.x, na.rm = T)
+# 
+# arbusto_cv.x <- data.spp$Covs$arbusto_cv
+# arbusto_cv.z <- arbusto_cv.x %>%
+#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+# arbusto_cv.missing <- is.na(arbusto_cv.z)*1
+# arbusto_cv.sd <- sd(arbusto_cv.z, na.rm = T)
+# arbusto_cv.z[which(is.na(arbusto_cv.z))] <- mean(arbusto_cv.z, na.rm = T)
+# arbusto_cv.lower <- (0 - mean(arbusto_cv.x, na.rm = T)) / sd(arbusto_cv.x, na.rm = T)
 
 drone.z <- data.spp$Covs %>% ungroup() %>%
   select(Mesquite_5m:Distance_to_Fence) %>%
   select(contains("_100m"), Distance_to_Fence) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
   mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
-  data.matrix()
-nDroneCovs <- ncol(drone.z)
+  data.matrix() %>%
+  array(., dim = c(dim(.), nDOS)) %>%
+  aperm(c(1, 3, 2))
+
+drone2.z <- drone.z ^ 2
 
 droneCV.z <- data.spp$Covs %>%
   select(Mesquite_5m_CV:Mean_Shrub_Height_500m_CV) %>%
   select(contains("_100m")) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
   mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
-  data.matrix()
-nDroneCovCVs <- ncol(droneCV.z)
+  data.matrix() %>%
+  array(., dim = c(dim(.), nDOS)) %>%
+  aperm(c(1, 3, 2))
 
 peso.x <- data.spp$Covs$peso
 peso.z <- peso.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) %>%
+  (function(x) ifelse(is.na(x), mean(x, na.rm = T), x)) %>%
+  array(., c(length(.), nDOS))
+
+X <- abind::abind(DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
+ncovs <- dim(X)[3]
+Y.alive <- (ymat == 1)*1
+Y.dead <- (ymat == 2)*1
+z.init <- (ymat == 1)*1
+for(i in 1:length(first)) {
+  z.init[i, (first[i]+1):data.spp$Covs$lastAlive[i]] <- 1
+  z.init[i, first[i]] <- NA
+  if(any(ymat[i, ] == 2, na.rm = T)) z.init[i, which(ymat[i, ] == 2)] <- 0
+}
+
+# Function for setting initial values in JAGS
+inits <- function()
+  list(z = z.init, B0 = rnorm(1, 4.8, 1), B = rep(0,ncovs), p = 0.9, psi = 0.5)
 
 # Fit model
 data <- list()
@@ -173,27 +172,27 @@ run.time <- end.time - st.time
 run.time
 rm(st.time,end.time)
 
-out <- resumeJAGS(fileStub = str_c("saveJAGS/", save.out, "/modsave"), nSaves = 40)
+#out <- resumeJAGS(fileStub = str_c("saveJAGS/", save.out, "/modsave"), nSaves = 40)
 
 # Gather, combine, and summarize JAGS saves from hard drive #
 rsav <- recoverSaves(str_c("saveJAGS/", save.out, "/modsave"))
 mod.raw <- combineSaves(rsav)
 Rhat <- gelman.diag(mod.raw)$psrf[, 2]
 neff <- effectiveSize(mod.raw)
-traceplot(mod.raw[, "B.drone[4]"])
 
 # Check the basics
 #max(out$summary[,"Rhat"])
 max(Rhat)
-sort(Rhat, decreasing = T)
+#sort(Rhat, decreasing = T)
+#traceplot(mod.raw[, "B.drone[4]"])
 
 #min(out$summary[,"n.eff"])
 min(neff)
-sort(neff)
+#sort(neff)
 
 # traceplots #
 pdf(file=str_c(save.out, '_traceplots.pdf'))
-plot.params <- params.saved <- parameters[c(1:3,14:17)]
+plot.params <- params.saved <- parameters
 for(i in 1:length(plot.params)) {
   par.i <- plot.params[i]
   pars.lst <- params.saved[which(substring(params.saved,1,nchar(par.i))==par.i)]

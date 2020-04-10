@@ -1,0 +1,29 @@
+model {
+
+#Priors
+B0 ~ dnorm(0, 0.6666667)
+psi ~ dunif(0, 1)
+p ~ dunif(0, 1)
+
+#for(b in 1:ncovs) {
+#  B[b] ~ dnorm(0, 0.6666667)
+#}
+
+for(i in 1:nBird) {
+  for(j in 1:nDOS) {
+    logit(S[i, j]) <- B0# + sum(BX[i, j, ])
+#    for(b in 1:ncovs) {
+#      BX[i, j, b] <- B[b] * X[i, j, b]
+#      }
+    }
+  z[i, (first[i] + 1)] ~ dbern(S[i, (first[i] + 1)])
+  for(j in (first[i] + 2):last[i]) {
+    z[i, j] ~ dbern(S[i, j]*z[i, (j - 1)])
+    }
+  for(j in (first[i] + 1):last[i]) {
+    Y.alive[i, j] ~ dbern(p * z[i, j])
+    tau[i, j] <- max(0, (j - sum(z[i,])))
+    Y.dead[i, j] ~ dbern(p * pow(psi, tau[i, j]) * (1 - z[i, j]))
+    }
+  }
+}
