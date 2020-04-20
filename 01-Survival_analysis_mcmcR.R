@@ -1,12 +1,11 @@
 library(stringr)
 library(dplyr)
-library(QSLpersonal)
-library(tictoc)
+#library(QSLpersonal)
+library(mvnfast)
 library(Rcpp)
 library(abind)
 library(RcppArmadillo)
 library(tictoc)
-library(mvnfast)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled.RData")
@@ -64,18 +63,48 @@ droneCV.z <- data.spp$Covs %>%
 peso.x <- data.spp$Covs$peso
 peso.z <- peso.x %>%
   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) %>%
+  (function(x) ifelse(is.na(x), mean(x, na.rm = T), x)) %>%
   array(., c(length(.), nDOS))
 
 X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
 Y <- ymat
+
+n=dim(Y)[1]
+J=dim(Y)[2]
+image(1:J,1:n,t(Y),col=c(5,3,2),main="Y",xlab="time",ylab="individual")
+
 tic()
-out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.5,s.reg=1,p=.95,p.tune=0.01,psi=.9,psi.tune=0.01)  
+out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.01,s.reg=.1,p=.9,p.tune=0.01,psi=.1,psi.tune=0.01,recov.homog=TRUE)  
 toc()
 out$pD
 out$DIC
-matplot(t(out$beta.save),type="l")
 
-#library(R.utils)
-#saveObject(out, save.out)
+layout(matrix(1:3,3,1))
+matplot(t(out$beta.save),type="l",lty=1)
+abline(h=0,col=8,lty=2)
+abline(v=out$n.burn,col=8,lty=2)
+plot(out$p.save,type="l")
+plot(out$psi.save,type="l")
+
+mean(out$p.save[out$n.burn:out$n.mcmc])
+quantile(out$p.save[out$n.burn:out$n.mcmc],c(0.025,0.975))
+mean(out$psi.save[out$n.burn:out$n.mcmc])
+quantile(out$psi.save[out$n.burn:out$n.mcmc],c(0.025,0.975))
+
+n.rows=floor(sqrt(out$p.cov))
+n.cols=ceiling(sqrt(out$p.cov))
+n.panel=n.rows*n.cols
+layout(matrix(1:n.panel,n.rows,n.cols))
+for(j in 1:out$p.cov){
+  hist(out$beta.save[j,out$n.burn:n.mcmc],col=rgb(0,0,0,.25),prob=TRUE,main="",xlab=bquote(beta[.(j-1)]))
+  abline(v=0,lty=2,col=8)
+}
+
+layout(matrix(1:2,1,2))
+hist(out$p.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(p),xlim=c(.5,1))
+hist(out$psi.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(psi),xlim=c(0,.5))
+
+library(R.utils)
+saveObject(out, save.out)
 
 

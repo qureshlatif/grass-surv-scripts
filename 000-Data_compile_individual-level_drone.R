@@ -20,7 +20,8 @@ dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, st
   mutate(X5m_Max_Shrub_Height = ifelse(X5m_Max_Shrub_Height == -Inf & Site == "Marfa", 0,
                                        ifelse(X5m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X5m_Max_Shrub_Height))) %>%
   mutate(X25m_Max_Shrub_Height = ifelse(X25m_Max_Shrub_Height == -Inf & Site == "Marfa", 0,
-                                        ifelse(X25m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X25m_Max_Shrub_Height)))
+                                        ifelse(X25m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X25m_Max_Shrub_Height))) %>%
+  mutate_all((function(x) ifelse(is.na(x), 0, x)))
 names.to.change <- names(dat.drone)[-c(1:3, ncol(dat.drone))]
 names.new <- str_split(names.to.change, "m_", simplify = T)[,2] %>%
   str_c("_",
@@ -33,7 +34,9 @@ dat.drone.means <- dat.drone %>% group_by(Site, Season, anillo) %>%
   summarise_all(mean, na.rm = T)
 
 dat.drone.CVs <- dat.drone %>% group_by(Site, Season, anillo) %>%
-  summarise_all((function(x) sd(x, na.rm = T) / mean(x, na.rm = T)))
+  summarise_all((function(x) sd(x, na.rm = T) / mean(x, na.rm = T))) %>%
+  ungroup %>%
+  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x)))
 names(dat.drone.CVs)[-c(1:3)] <- str_c(names(dat.drone.CVs)[-c(1:3)], "_CV")
 
 dat.drone.n <- dat.drone %>% group_by(Site, Season, anillo) %>%

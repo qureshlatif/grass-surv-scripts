@@ -23,6 +23,7 @@ library(mvnfast)
 
 if(recov.homog){
   fwdalg <- CJSRL5fwdalg 
+#  fwdalg <- CJSRL6fwdalg  # version to look for problematic individuals by NA in log likelihood
 }
 if(!recov.homog){
   fwdalg <- CJSRL4fwdalg 
@@ -35,11 +36,17 @@ if(!recov.homog){
 n=dim(Y)[1]
 p.cov=(dim(X)[3])
 J=dim(Y)[2]
-n.burn=round(.25*n.mcmc)
+n.burn=round(.4*n.mcmc)
 
 beta.save=matrix(0,p.cov,n.mcmc)
 p.save=rep(0,n.mcmc)
 psi.save=rep(0,n.mcmc)
+
+FL=cbind(rep(1,n),rep(J,n)) # default first and last time of survey by individual
+for(i in 1:n){
+  FL[i,1]=min((1:J)[Y[i,]==1 & !is.na(Y[i,])])
+  FL[i,2]=max((1:J)[!is.na(Y[i,])])
+}
 
 ###
 ###  Priors 
@@ -48,11 +55,11 @@ psi.save=rep(0,n.mcmc)
 mu.beta=rep(0,p.cov)
 s.beta=c(1.5,rep(s.reg,p.cov-1))
 
-alpha.p=92
-beta.p=8
+alpha.p=4
+beta.p=1
 
-alpha.psi=40
-beta.psi=10
+alpha.psi=1
+beta.psi=1
 
 ###
 ###  Starting Values 
@@ -74,34 +81,53 @@ for(i in 1:n){
   phi[i,]=logit.inv(X[i,,]%*%beta)
 }
 
-#ll=CJSRL4fwdalg(Y,X,beta,p,psi)$ll
-ll=fwdalg(Y,X,beta,p,psi)$ll
+tmp=fwdalg(Y,X,beta,p,psi,FL)
+ll=tmp$ll
+#plot(tmp$ll.vec,type="l")
 
 beta.mean=rep(0,p.cov)
 p.mean=0
 psi.mean=0
 D.bar=0
 
+#adapt.iter=5000  	# adaptation period
+adapt.iter=n.mcmc+1
+s.d=(2.4^2)/p.cov 	# adaptation scaling constant
+nug=.01		  	# "nugget" effect to keep cov from being singular
+
 ###
 ###  Begin MCMC Loop 
 ###
 
 for(k in 1:n.mcmc){
-  if((k %% 1000)==0)  cat(k," ")
+  if((k %% 500)==0){  
+    cat(k," ")
+    matplot(t(beta.save[,1:(k-1)]),type="l",lty=1)
+  }
 
   ###
-  ###  Adaptive proposal 
+  ###  Adaptive proposal (Haario et al., 2001)
   ###
   
-  if(k<1000){
+  if(k<adapt.iter){
     beta.star=rnorm(p.cov,beta,beta.tune)
   }
-  if((k%%1000==0) & (k<=n.burn)){
-    mu.prop=apply(beta.save[,(k-999):k],1,mean)
-    Sig.prop=cov(t(beta.save[,(k-999):k]))
+  if(k>=adapt.iter & (k%%adapt.iter==0) & k<=n.burn){
+    Sig.prop=s.d*cov(t(beta.save[,1:(k-1)]))+s.d*nug*diag(p.cov)
   }
-  if(k>=1000){
-    beta.star=as.vector(rmvn(1,mu.prop,Sig.prop))
+#  if(k==adapt.iter){
+#    Sig.prop=s.d*cov(t(beta.save[,1:(k-1)]))+s.d*nug*diag(p.cov)
+#    beta.mn.kminus1=apply(beta.save[,1:(k-2)],1,mean)
+#    beta.mn.k=apply(beta.save[,1:(k-1)],1,mean)
+#  }
+#  if(k>adapt.iter & k<=n.burn){
+#    Sig.prop=((k-2)/(k-1))*Sig.prop+s.d/(k-1)*((k-1)*beta.mn.kminus1%*%t(beta.mn.kminus1)+k*(beta.mn.k%*%t(beta.mn.k))+nug*diag(p.cov))
+#    beta.mn.kminus1=beta.mn.k
+#    beta.mn.k=beta.mn.k+(beta.save[,k-1]-beta.mn.k)/k
+#  }
+  if(k>=adapt.iter){
+    beta.star=as.vector(rmvn(1,beta,Sig.prop))
+#    beta.star=as.vector(rmvnorm(1,beta,Sig.prop))
   }
 
   ###
@@ -109,18 +135,24 @@ for(k in 1:n.mcmc){
   ###
 
   ll.star=0
-#  ll.star=CJSRL4fwdalg(Y,X,beta.star,p,psi)$ll
-  ll.star=fwdalg(Y,X,beta.star,p,psi)$ll
-  if(k<1000){
+  tmp=fwdalg(Y,X,beta.star,p,psi,FL)
+  ll.star=tmp$ll
+  if(k<adapt.iter){
     mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))
     mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))
   }
-  if(k>=1000){
-    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))+dmvn(beta,mu.prop,Sig.prop,log=TRUE)
-    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))+dmvn(beta.star,mu.prop,Sig.prop,log=TRUE)
+  if(k>=adapt.iter){
+    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))+dmvn(beta,beta.star,Sig.prop,log=TRUE)
+    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))+dmvn(beta.star,beta,Sig.prop,log=TRUE)
+#    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))+dmvnorm(beta,beta.star,Sig.prop,log=TRUE)
+#    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))+dmvnorm(beta.star,beta,Sig.prop,log=TRUE)
   }
   mh=exp(mh.1-mh.2)
-  if(mh > runif(1)){
+#  if(is.na(mh)){
+#    plot(tmp$ll.vec,type="l",main=k,ylim=c(-150,0))
+#    abline(v=(1:n)[is.na(tmp$ll.vec)],col=2)
+#  }
+  if(mh > runif(1) & !is.na(mh)){
     beta=beta.star 
     ll=ll.star
   }
@@ -134,12 +166,11 @@ for(k in 1:n.mcmc){
  
     if(p.star>0 & p.star<1){ 
       ll.star=0
-#      ll.star=CJSRL4fwdalg(Y,X,beta,p.star,psi)$ll
-      ll.star=fwdalg(Y,X,beta,p.star,psi)$ll
+      ll.star=fwdalg(Y,X,beta,p.star,psi,FL)$ll
       mh.1=ll.star+dbeta(p.star,alpha.p,beta.p,log=TRUE)
       mh.2=ll+dbeta(p,alpha.p,beta.p,log=TRUE)
       mh=exp(mh.1-mh.2)
-      if(mh > runif(1)){
+      if(mh > runif(1) & !is.na(mh)){
         p=p.star 
         ll=ll.star
       }
@@ -155,12 +186,11 @@ for(k in 1:n.mcmc){
  
     if(psi.star>0 & psi.star<1){ 
       ll.star=0
-#      ll.star=CJSRL4fwdalg(Y,X,beta,p,psi.star)$ll
-      ll.star=fwdalg(Y,X,beta,p,psi.star)$ll
+      ll.star=fwdalg(Y,X,beta,p,psi.star,FL)$ll
       mh.1=ll.star+dbeta(psi.star,alpha.psi,beta.psi,log=TRUE)
       mh.2=ll+dbeta(psi,alpha.psi,beta.psi,log=TRUE)
       mh=exp(mh.1-mh.2)
-      if(mh > runif(1)){
+      if(mh > runif(1) & !is.na(mh)){
         psi=psi.star 
         ll=ll.star
       }
@@ -187,8 +217,7 @@ for(k in 1:n.mcmc){
 ###  Calculate DIC 
 ###
   
-#D.hat=-2*CJSRL4fwdalg(Y,X,beta.mean,p.mean,psi.mean)$ll
-D.hat=-2*fwdalg(Y,X,beta.mean,p.mean,psi.mean)$ll
+D.hat=-2*fwdalg(Y,X,beta.mean,p.mean,psi.mean,FL)$ll
 pD=D.bar-D.hat
 DIC=D.hat+2*pD
 
@@ -196,6 +225,6 @@ DIC=D.hat+2*pD
 ###  Write Output 
 ###
 
-list(beta.save=beta.save,n.mcmc=n.mcmc,DIC=DIC,pD=pD,p.save=p.save,psi.save=psi.save,n.burn=n.burn)
+list(beta.save=beta.save,n.mcmc=n.mcmc,DIC=DIC,pD=pD,p.save=p.save,psi.save=psi.save,n.burn=n.burn,FL=FL,p.cov=p.cov)
 
 }

@@ -3,7 +3,7 @@ library(stringr)
 library(lubridate)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled.RData")
+load("Data_compiled_knownFate.RData")
 
 # Plot Day of season by mass #
 # spp <- "BAIS"
@@ -24,7 +24,7 @@ load("Data_compiled.RData")
 #     dat.banding %>% filter(especie == spp) %>% filter(hora_dec != -999 & peso != -999)  %>% pull(peso))
 
 # Data summaries #
-cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "prpDaysDet", "nMort", "",
+cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "prpDaysDet", "nMort",
           "Mean_Days_radiotracked", "Min_Days_radiotracked", "Max_Days_radiotracked",
           "n_PercMassChange_Tagged", "Mean_PercMassChange_Tagged", "Min_PercMassChange_Tagged", "Max_PercMassChange_Tagged",
           "n_PercMassChange_Untagged", "Mean_PercMassChange_Untagged", "Min_PercMassChange_Untagged", "Max_PercMassChange_Untagged")
@@ -92,7 +92,7 @@ for(spp in species) {
   out[spp, "Min_PercMassChange_Untagged"] <- min(massChange)
   out[spp, "Max_PercMassChange_Untagged"] <- max(massChange)
 }
-#write.csv(out, "Summary.csv", row.names = T)
+write.csv(out, "Summary_knownFate.csv", row.names = T)
 
 # Summarize mass by site #
 sites <- unique(dat.banding$Site)

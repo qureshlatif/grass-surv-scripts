@@ -4,9 +4,10 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export]]
-Rcpp::List CJSRL5fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec& beta, const double p, const double psi, const arma::mat& FL) {
+Rcpp::List CJSRL6fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec& beta, const double p, const double psi, const arma::mat& FL) {
     int n = Y.n_rows, J = Y.n_cols, pcov = X.n_slices; 
     double ll=0;
+    arma::colvec llvec=arma::zeros(n);
     arma::colvec theta=arma::zeros(2);
     arma::colvec v=arma::zeros(2);
     arma::mat P=arma::zeros(2,2);    
@@ -45,13 +46,14 @@ Rcpp::List CJSRL5fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec
         }
         arma::vec v=P*Phi*theta;
         double u=arma::accu(v);
-        ll=ll+log(u);
+        llvec(i)=llvec(i)+log(u);
         theta=v/u;
 // Rcpp::Rcout << i << " " << j << std::endl;
 // Rcpp::Rcout << ll << std::endl;
 
       } 
     }
+    ll=arma::accu(llvec);
 
-    return Rcpp::List::create(Rcpp::Named("ll") = ll);
+    return Rcpp::List::create(Rcpp::Named("ll") = ll, Rcpp::Named("ll.vec") = llvec);
 }

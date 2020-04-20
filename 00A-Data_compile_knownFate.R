@@ -192,7 +192,7 @@ for(sp in species[1:2]) {
 
 rm(dets, sp, ind.afterD31, ind.beforeD31, obs, obs9s, dat, Covs, obsRaw,
    ymat, i, ii, firstDay, lastDay, penultimateDay, firstDay9, lastDay9)
-save.image("Data_compiled.RData")
+save.image("Data_compiled_knownFate.RData")
 
 # # Compile detection history matrix for review #
 # season_days <- dat$season_day %>%

@@ -4,7 +4,7 @@ using namespace Rcpp;
 using namespace arma;
 
 // [[Rcpp::export]]
-Rcpp::List CJSRL4fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec& beta, const double p, const double psi) {
+Rcpp::List CJSRL4fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec& beta, const double p, const double psi, const arma::mat& FL) {
     int n = Y.n_rows, J = Y.n_cols, pcov = X.n_slices; 
     int tau = 0;
     double ll=0;
@@ -24,7 +24,7 @@ Rcpp::List CJSRL4fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec
       theta(0)=1;
       theta(1)=0;
       tau=0;
-      for(int j=1;j<J;j++){
+      for(int j=FL(i,0);j<FL(i,1);j++){
         Phi(0,0)=phi(j);
         Phi(1,0)=1-phi(j);
         if(arma::is_finite(Y(i,j))){
@@ -50,6 +50,10 @@ Rcpp::List CJSRL4fwdalg(const arma::mat& Y, const arma::cube& X, const arma::vec
         double u=arma::accu(v);
         ll=ll+log(u);
         theta=v/u;
+
+// Rcpp::Rcout << i << " " << j << std::endl;
+// Rcpp::Rcout << Y(i,j) << std::endl;
+
       } 
     }
 

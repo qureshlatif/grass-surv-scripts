@@ -201,11 +201,12 @@ for(sp in species[1:2]) {
     mutate(firstDay = NA, lastAlive = NA, lastDay = NA,
            freq1 = NA, break1Start = NA, break1End = NA,
            freq2 = NA, break2Start = NA, break2End = NA,
-           freq.final = NA) %>% 
+           freq.final = NA, resultado.final = NA) %>% 
     mutate(SiteInd = as.factor(Site) %>% as.integer,
            SeasonInd = as.factor(Season) %>% as.integer,
            Indiv = str_c(Site, Season, anillo, sep = "_") %>%
-             as.factor() %>% as.integer) %>% unique
+             as.factor() %>% as.integer) %>% unique %>%
+    as.data.frame()
   ymat <- matrix(NA, nrow = nrow(Covs), ncol = max(dets$DOS)) # Set up data matrix
   for(i in 1:nrow(Covs)) {
     trans <- dat.trans %>%
@@ -274,6 +275,14 @@ for(sp in species[1:2]) {
     }
     if(Covs$lastDay[i] < Covs$lastAlive[i] & # For cases where bird lived and the battery lasted longer than the expected period.
        !any(ymat[i,] == 2, na.rm = T)) Covs$lastDay[i] <- Covs$lastAlive[i]
+    
+    if((trans %>%
+      filter(DOSdepl == max(DOSdepl)) %>%
+      pull(resultado) %>%
+      length) > 1) stop("More than one final resultado.")
+    Covs$resultado.final[i] <- trans %>%
+      filter(DOSdepl == max(DOSdepl)) %>%
+      pull(resultado)
   }
   
   # Add covariate values #
@@ -323,8 +332,8 @@ for(sp in species[1:2]) {
   assign(str_c("data.", sp), data.spp)
 }
 
-rm(dets, sp, ind.afterD31, ind.beforeD31, obs, dat, Covs,
-   ymat, i, countUnexpectedMissingDOSrecup, downDays, ind.fill,
+rm(dets, sp, ind.afterD31, ind.beforeD31, ind.ss, ss, data.spp, obs, dat, Covs,
+   ymat, i, countUnexpectedMissingDOSrecup, downDays, ind.fill, ind.nosurv,
    ind.missing, maxDOS, maxNoDeployments, tr, trans, deployments)
 save.image("Data_compiled.RData")
 
