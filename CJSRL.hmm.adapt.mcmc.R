@@ -1,4 +1,4 @@
-CJSRL.hmm.adapt.mcmc <- function(Y,X,n.mcmc,beta.tune=0.1,s.reg=1.5,p=0.95,p.tune=0.01,psi=0.9,psi.tune=0.01,recov.homog=FALSE){
+CJSRL.hmm.adapt.mcmc <- function(Y,X,n.mcmc,beta.tune=0.1,s.reg=1.5,p=0.95,p.tune=0.01,psi=0.9,psi.tune=0.01,recov.homog=FALSE,adapt.iter=500,plot.trace=FALSE){
 
 #
 #  Fits CJS model with dead recoveries using HMM perspective and forward algorithm for likelihood
@@ -23,7 +23,6 @@ library(mvnfast)
 
 if(recov.homog){
   fwdalg <- CJSRL5fwdalg 
-#  fwdalg <- CJSRL6fwdalg  # version to look for problematic individuals by NA in log likelihood
 }
 if(!recov.homog){
   fwdalg <- CJSRL4fwdalg 
@@ -36,7 +35,7 @@ if(!recov.homog){
 n=dim(Y)[1]
 p.cov=(dim(X)[3])
 J=dim(Y)[2]
-n.burn=round(.4*n.mcmc)
+n.burn=round(.2*n.mcmc)
 
 beta.save=matrix(0,p.cov,n.mcmc)
 p.save=rep(0,n.mcmc)
@@ -81,116 +80,85 @@ for(i in 1:n){
   phi[i,]=logit.inv(X[i,,]%*%beta)
 }
 
-tmp=fwdalg(Y,X,beta,p,psi,FL)
-ll=tmp$ll
-#plot(tmp$ll.vec,type="l")
+ll=fwdalg(Y,X,beta,p,psi,FL)$ll
 
 beta.mean=rep(0,p.cov)
 p.mean=0
 psi.mean=0
 D.bar=0
 
-#adapt.iter=5000  	# adaptation period
-adapt.iter=n.mcmc+1
-s.d=(2.4^2)/p.cov 	# adaptation scaling constant
-nug=.01		  	# "nugget" effect to keep cov from being singular
+#adapt.iter=1000  	# adaptation interval 
+keep.vec=rep(0,n.mcmc)
+
+acc.target=.3
 
 ###
 ###  Begin MCMC Loop 
 ###
 
 for(k in 1:n.mcmc){
-  if((k %% 500)==0){  
+  if((k %% adapt.iter)==0){  
     cat(k," ")
-    matplot(t(beta.save[,1:(k-1)]),type="l",lty=1)
+    if(plot.trace){
+      layout(matrix(c(1,1,2,3),4,1))
+      matplot(t(beta.save[,1:(k-1)]),type="l",lty=1,main="trace plot",ylab=bquote(beta),xlab="iteration")
+      matplot(cbind(p.save[1:(k-1)],psi.save[1:(k-1)]),type="l",lty=1,main="",ylab="detection and recovery",xlab="iteration",ylim=c(0,1))
+      plot(cumsum(keep.vec[1:k])/1:k,type="l",ylim=c(0,1),main=paste("beta.tune =",round(beta.tune,5)),ylab="acceptance rate",xlab="iteration")
+      abline(h=acc.target,col=3)
+      lines(cumsum(keep.vec[1:k])/1:k,col=1)
+      abline(v=seq(0,n.burn,adapt.iter),lty=2,col=8)
+      abline(v=n.burn,lty=2)
+      legend("topright",lty=2,col=c(8,1),lwd=2,legend=c("adaptation","burn-in"),bg="white")
+    }
   }
 
   ###
-  ###  Adaptive proposal (Haario et al., 2001)
+  ###  Adaptive proposal 
   ###
-  
-  if(k<adapt.iter){
-    beta.star=rnorm(p.cov,beta,beta.tune)
-  }
+
+  mag=(1-k/n.burn)
   if(k>=adapt.iter & (k%%adapt.iter==0) & k<=n.burn){
-    Sig.prop=s.d*cov(t(beta.save[,1:(k-1)]))+s.d*nug*diag(p.cov)
+    if(mean(keep.vec[(k-adapt.iter+1):(k-1)])<acc.target){
+      beta.tune=beta.tune/(1+.5*mag)
+    }
+    if(mean(keep.vec[(k-adapt.iter+1):(k-1)])>acc.target){
+      beta.tune=beta.tune*(1+.5*mag)
+    }
   }
-#  if(k==adapt.iter){
-#    Sig.prop=s.d*cov(t(beta.save[,1:(k-1)]))+s.d*nug*diag(p.cov)
-#    beta.mn.kminus1=apply(beta.save[,1:(k-2)],1,mean)
-#    beta.mn.k=apply(beta.save[,1:(k-1)],1,mean)
-#  }
-#  if(k>adapt.iter & k<=n.burn){
-#    Sig.prop=((k-2)/(k-1))*Sig.prop+s.d/(k-1)*((k-1)*beta.mn.kminus1%*%t(beta.mn.kminus1)+k*(beta.mn.k%*%t(beta.mn.k))+nug*diag(p.cov))
-#    beta.mn.kminus1=beta.mn.k
-#    beta.mn.k=beta.mn.k+(beta.save[,k-1]-beta.mn.k)/k
-#  }
-  if(k>=adapt.iter){
-    beta.star=as.vector(rmvn(1,beta,Sig.prop))
-#    beta.star=as.vector(rmvnorm(1,beta,Sig.prop))
-  }
+  
+  beta.star=rnorm(p.cov,beta,beta.tune)
 
   ###
   ###  Sample beta 
   ###
 
   ll.star=0
-  tmp=fwdalg(Y,X,beta.star,p,psi,FL)
-  ll.star=tmp$ll
-  if(k<adapt.iter){
-    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))
-    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))
-  }
-  if(k>=adapt.iter){
-    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))+dmvn(beta,beta.star,Sig.prop,log=TRUE)
-    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))+dmvn(beta.star,beta,Sig.prop,log=TRUE)
-#    mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))+dmvnorm(beta,beta.star,Sig.prop,log=TRUE)
-#    mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))+dmvnorm(beta.star,beta,Sig.prop,log=TRUE)
-  }
+  ll.star=fwdalg(Y,X,beta.star,p,psi,FL)$ll
+  mh.1=ll.star+sum(dnorm(beta.star,mu.beta,s.beta,log=TRUE))
+  mh.2=ll+sum(dnorm(beta,mu.beta,s.beta,log=TRUE))
   mh=exp(mh.1-mh.2)
-#  if(is.na(mh)){
-#    plot(tmp$ll.vec,type="l",main=k,ylim=c(-150,0))
-#    abline(v=(1:n)[is.na(tmp$ll.vec)],col=2)
-#  }
   if(mh > runif(1) & !is.na(mh)){
     beta=beta.star 
     ll=ll.star
+    keep.vec[k]=1
   }
 
   ###
-  ###  Sample p 
+  ###  Sample p and psi jointly
   ###
 
-  if(!is.null(p.tune)){ 
+  if(!is.null(p.tune) & !is.null(psi.tune)){ 
     p.star=rnorm(1,p,p.tune)
+    psi.star=rnorm(1,psi,psi.tune)
  
-    if(p.star>0 & p.star<1){ 
+    if(p.star>0 & p.star<1 & psi.star>0 & psi.star<1){ 
       ll.star=0
-      ll.star=fwdalg(Y,X,beta,p.star,psi,FL)$ll
-      mh.1=ll.star+dbeta(p.star,alpha.p,beta.p,log=TRUE)
-      mh.2=ll+dbeta(p,alpha.p,beta.p,log=TRUE)
+      ll.star=fwdalg(Y,X,beta,p.star,psi.star,FL)$ll
+      mh.1=ll.star+dbeta(p.star,alpha.p,beta.p,log=TRUE)+dbeta(psi.star,alpha.psi,beta.psi,log=TRUE)
+      mh.2=ll+dbeta(p,alpha.p,beta.p,log=TRUE)+dbeta(psi,alpha.psi,beta.psi,log=TRUE)
       mh=exp(mh.1-mh.2)
       if(mh > runif(1) & !is.na(mh)){
         p=p.star 
-        ll=ll.star
-      }
-    }
-  }
-
-  ###
-  ###  Sample psi 
-  ###
-
-  if(!is.null(psi.tune)){ 
-    psi.star=rnorm(1,psi,psi.tune)
- 
-    if(psi.star>0 & psi.star<1){ 
-      ll.star=0
-      ll.star=fwdalg(Y,X,beta,p,psi.star,FL)$ll
-      mh.1=ll.star+dbeta(psi.star,alpha.psi,beta.psi,log=TRUE)
-      mh.2=ll+dbeta(psi,alpha.psi,beta.psi,log=TRUE)
-      mh=exp(mh.1-mh.2)
-      if(mh > runif(1) & !is.na(mh)){
         psi=psi.star 
         ll=ll.star
       }

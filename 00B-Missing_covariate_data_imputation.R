@@ -2,7 +2,8 @@ library(tidyverse)
 library(randomForest)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled.RData")
+load("Data_compiled_knownFate.RData")
+#load("Data_compiled.RData")
 
 
 vars <- names(data.BAIS$Covs)
@@ -67,4 +68,5 @@ for(spp in species[1:2]) {
 
 rm(data.spp, miss.fill, rf, ind.known, ind.missing, miss, spp, v, v.complete,
    vars, vars.drone, vars.field, vars.field.ground, vars.field.shrub)
-save.image("Data_compiled_MissingCovsImputed.RData")
+#save.image("Data_compiled_MissingCovsImputed.RData")
+save.image("Data_compiled_KnownFateMissingImputed.RData")

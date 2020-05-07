@@ -1,6 +1,5 @@
 library(stringr)
 library(dplyr)
-#library(QSLpersonal)
 library(mvnfast)
 library(Rcpp)
 library(abind)
@@ -8,7 +7,7 @@ library(RcppArmadillo)
 library(tictoc)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled.RData")
+load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP

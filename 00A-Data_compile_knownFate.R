@@ -186,7 +186,7 @@ for(sp in species[1:2]) {
   Covs$firstDay <- apply(ymat, 1, function(x) which(!is.na(x))[1]) # Recalculate so that first days do not precede the first active day.
   
   # Gather final data objects and store.
-  dat <- list(Covs = Covs, ymat = ymat)
+  dat <- list(Covs = Covs, obsInt = obsRaw, ymat = ymat)
   assign(str_c("data.", sp), dat)
 }
 

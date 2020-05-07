@@ -1,0 +1,10 @@
+model {
+
+#Priors
+B0 ~ dnorm(0, 0.666667)
+logit(S) <- B0
+
+for(i in 1:nObs) {
+  Y[i] ~ dbinom(S, Int[i])
+  }
+}

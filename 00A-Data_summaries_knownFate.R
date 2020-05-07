@@ -25,9 +25,11 @@ load("Data_compiled_knownFate.RData")
 
 # Data summaries #
 cols <- c("No_indivs", "No_Rtagged",  "No_ind_monitored", "Recap_indivis", "nDays", "prpDaysDet", "nMort",
-          "Mean_Days_radiotracked", "Min_Days_radiotracked", "Max_Days_radiotracked",
-          "n_PercMassChange_Tagged", "Mean_PercMassChange_Tagged", "Min_PercMassChange_Tagged", "Max_PercMassChange_Tagged",
-          "n_PercMassChange_Untagged", "Mean_PercMassChange_Untagged", "Min_PercMassChange_Untagged", "Max_PercMassChange_Untagged")
+          "Mean_Days_radiotracked", "Min_Days_radiotracked", "Max_Days_radiotracked")#,
+#          "n_PercMassChange_Tagged", "Mean_PercMassChange_Tagged", "Min_PercMassChange_Tagged", "Max_PercMassChange_Tagged",
+#          "n_PercMassChange_Untagged", "Mean_PercMassChange_Untagged", "Min_PercMassChange_Untagged", "Max_PercMassChange_Untagged")
+#***Note: Summary for mass change doesn't work anymore after removing duplicate records from the dataset. I think we'd need to get this from a separate query if desired in the future.
+
 out <- matrix(NA, nrow = length(species), ncol = length(cols),
               dimnames = list(species, cols))
 
@@ -66,31 +68,31 @@ for(spp in species) {
   out[spp, "Mean_Days_radiotracked"] <- mean(daysMonitored[which(daysMonitored > 0)])
   out[spp, "Min_Days_radiotracked"] <- min(daysMonitored[which(daysMonitored > 0)])
   out[spp, "Max_Days_radiotracked"] <- max(daysMonitored[which(daysMonitored > 0)])
-  massChange <- dat.banding %>%
-    filter(especie == spp & Tagged & peso != -999) %>%
-    arrange(Season, anillo, DOS) %>%
-    dplyr::group_by(Season, anillo) %>%
-    mutate(firstMass = first(peso), lastMass = last(peso)) %>%
-    summarise(ncapt = n(), firstMass = first(firstMass), lastMass = first(lastMass)) %>%
-    filter(ncapt > 1) %>%
-    #mutate(deltaMass = lastMass - firstMass) %>% pull(deltaMass)
-    mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
-  out[spp, "n_PercMassChange_Tagged"] <- length(massChange)
-  out[spp, "Mean_PercMassChange_Tagged"] <- mean(massChange)
-  out[spp, "Min_PercMassChange_Tagged"] <- min(massChange)
-  out[spp, "Max_PercMassChange_Tagged"] <- max(massChange)
-  massChange <- dat.banding %>%
-    filter(especie == spp & !Tagged & peso != -999) %>%
-    arrange(Season, anillo, DOS) %>%
-    dplyr::group_by(Season, anillo) %>%
-    mutate(firstMass = first(peso), lastMass = last(peso)) %>%
-    summarise(ncapt = n(), firstMass = first(firstMass), lastMass = first(lastMass)) %>%
-    filter(ncapt > 1) %>%
-    mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
-  out[spp, "n_PercMassChange_Untagged"] <- length(massChange)
-  out[spp, "Mean_PercMassChange_Untagged"] <- mean(massChange)
-  out[spp, "Min_PercMassChange_Untagged"] <- min(massChange)
-  out[spp, "Max_PercMassChange_Untagged"] <- max(massChange)
+  # massChange <- dat.banding %>%
+  #   filter(especie == spp & Tagged & peso != -999) %>%
+  #   arrange(Season, anillo, DOS) %>%
+  #   dplyr::group_by(Season, anillo) %>%
+  #   mutate(firstMass = first(peso), lastMass = last(peso)) %>%
+  #   summarise(ncapt = n(), firstMass = first(peso), lastMass = first(peso)) %>%
+  #   filter(ncapt > 1) %>%
+  #   #mutate(deltaMass = lastMass - firstMass) %>% pull(deltaMass)
+  #   mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
+  # out[spp, "n_PercMassChange_Tagged"] <- sum(!is.na(massChange))
+  # out[spp, "Mean_PercMassChange_Tagged"] <- mean(massChange, na.rm = T)
+  # out[spp, "Min_PercMassChange_Tagged"] <- min(massChange, na.rm = T)
+  # out[spp, "Max_PercMassChange_Tagged"] <- max(massChange, na.rm = T)
+  # massChange <- dat.banding %>%
+  #   filter(especie == spp & !Tagged & peso != -999) %>%
+  #   arrange(Season, anillo, DOS) %>%
+  #   dplyr::group_by(Season, anillo) %>%
+  #   mutate(firstMass = first(peso), lastMass = last(peso)) %>%
+  #   summarise(ncapt = n(), firstMass = first(firstMass), lastMass = first(lastMass)) %>%
+  #   filter(ncapt > 1) %>%
+  #   mutate(deltaMass = ((lastMass - firstMass) / firstMass) * 100) %>% pull(deltaMass)
+  # out[spp, "n_PercMassChange_Untagged"] <- sum(!is.na(massChange))
+  # out[spp, "Mean_PercMassChange_Untagged"] <- mean(massChange, na.rm = T)
+  # out[spp, "Min_PercMassChange_Untagged"] <- min(massChange, na.rm = T)
+  # out[spp, "Max_PercMassChange_Untagged"] <- max(massChange, na.rm = T)
 }
 write.csv(out, "Summary_knownFate.csv", row.names = T)
 

@@ -1,5 +1,6 @@
 library(jagsUI)
 #library(saveJAGS)
+library(QSLpersonal)
 library(stringr)
 library(dplyr)
 
@@ -9,25 +10,34 @@ load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-model.file <- "grass-surv-scripts/model_CJSRLHomog_Dot.jags"
+model.file <- "grass-surv-scripts/model_CJSRLprototype_Veg.jags"
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 1000 # burn in
-ni <- 6000 # number of iterations
-nt <- 10 # thinning
+nb <- 10 #1000 # burn in
+ni <- 20 #6000 # number of iterations
+nt <- 1#10 # thinning
 
-save.out <- str_c("mod_CJSRLHomog_Dot_", spp)
+save.out <- str_c("mod_CJSRLprototype_Veg_", spp)
 #______________________________#
 
 # Data objects to send to JAGS
 data.nams <- c("Y.alive", "Y.dead", "first", "last",
                "nBird", "nSite", "nSeason", "nDOS", "ncovs",
                "SeasonInd", "SiteInd", "X",
-               "DOSdepl", "time_since_depl", "after_depl")
+               "DOS", "DOS2",
+               "DOSdepl", "time_since_depl", "after_depl",
+               
+               "hierbas.z", "hierba_ht.z", "arbusto.z", "pastos.z",
+               "pasto_ht.z", "salsola.z", "salsola_ht.z", "arbusto_cv.z",
+               
+               "peso.z")
 
 # Stuff to save from JAGS
-parameters <- c("B0", "B", "p", "psi")
+parameters <- c("B0", "B0.mean", "sigma.B0", "B", "p", "psi", "B.DOS", "B.DOS2", "B.trans", "P.trans",
+                "B.hierbas", "B.hierba_ht", "B.arbusto", "B.pastos", "B.pasto_ht",
+                "B.salsola", "B.salsola_ht", "B.arbusto_cv", "B.drone", "B2.drone",
+                "BCV.drone", "B.peso", "n.alive", "n.dead")
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -50,75 +60,37 @@ DOSdepl <- first
 time_since_depl <- DOS - DOSdepl
 after_depl <- (time_since_depl > 0)*1
 
-# hierbas.x <- data.spp$Covs$hierbas
-# hierbas.z <- hierbas.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# hierbas.missing <- is.na(hierbas.z)*1
-# hierbas.sd <- sd(hierbas.z, na.rm = T)
-# hierbas.z[which(is.na(hierbas.z))] <- mean(hierbas.z, na.rm = T)
-# hierbas.lower <- (0 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
-# hierbas.upper <- (100 - mean(hierbas.x, na.rm = T)) / sd(hierbas.x, na.rm = T)
-# 
-# hierba_ht.x <- data.spp$Covs$hierba_ht
-# hierba_ht.z <- hierba_ht.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# hierba_ht.missing <- is.na(hierba_ht.z)*1
-# hierba_ht.sd <- sd(hierba_ht.z, na.rm = T)
-# hierba_ht.z[which(is.na(hierba_ht.z))] <- mean(hierba_ht.z, na.rm = T)
-# hierba_ht.lower <- (0 - mean(hierba_ht.x, na.rm = T)) / sd(hierba_ht.x, na.rm = T)
-# 
-# arbusto.x <- data.spp$Covs$arbusto
-# arbusto.z <- arbusto.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# arbusto.missing <- is.na(arbusto.z)*1
-# arbusto.sd <- sd(arbusto.z, na.rm = T)
-# arbusto.z[which(is.na(arbusto.z))] <- mean(arbusto.z, na.rm = T)
-# arbusto.lower <- (0 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
-# arbusto.upper <- (100 - mean(arbusto.x, na.rm = T)) / sd(arbusto.x, na.rm = T)
-# 
-# pastos.x <- data.spp$Covs$pastos
-# pastos.z <- pastos.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# pastos.missing <- is.na(pastos.z)*1
-# pastos.sd <- data.spp$Covs$pastos_predsd / sd(pastos.x, na.rm = T)
-# pastos.sd[which(is.na(pastos.sd))] <- sd(pastos.z, na.rm = T)
-# pastos.z[which(is.na(pastos.z))] <- ((data.spp$Covs$pastos_pred - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T))[which(is.na(pastos.z))]
-# pastos.z[which(is.na(pastos.z))] <- mean(pastos.z, na.rm = T)
-# pastos.lower <- (0 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
-# pastos.upper <- (100 - mean(pastos.x, na.rm = T)) / sd(pastos.x, na.rm = T)
-# 
-# pasto_ht.x <- data.spp$Covs$pasto_ht
-# pasto_ht.z <- pasto_ht.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# pasto_ht.missing <- is.na(pasto_ht.z)*1
-# pasto_ht.sd <- sd(pasto_ht.z, na.rm = T)
-# pasto_ht.z[which(is.na(pasto_ht.z))] <- mean(pasto_ht.z, na.rm = T)
-# pasto_ht.lower <- (0 - mean(pasto_ht.x, na.rm = T)) / sd(pasto_ht.x, na.rm = T)
-# 
-# salsola.x <- data.spp$Covs$salsola
-# salsola.z <- salsola.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# salsola.missing <- is.na(salsola.z)*1
-# salsola.sd <- sd(salsola.z, na.rm = T)
-# salsola.z[which(is.na(salsola.z))] <- mean(salsola.z, na.rm = T)
-# salsola.lower <- (0 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
-# salsola.upper <- (100 - mean(salsola.x, na.rm = T)) / sd(salsola.x, na.rm = T)
-# 
-# salsola_ht.x <- data.spp$Covs$salsola_ht
-# salsola_ht.z <- salsola_ht.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# salsola_ht.missing <- is.na(salsola_ht.z)*1
-# salsola_ht.sd <- sd(salsola_ht.z, na.rm = T)
-# salsola_ht.z[which(is.na(salsola_ht.z))] <- mean(salsola_ht.z, na.rm = T)
-# salsola_ht.lower <- (0 - mean(salsola_ht.x, na.rm = T)) / sd(salsola_ht.x, na.rm = T)
-# 
-# arbusto_cv.x <- data.spp$Covs$arbusto_cv
-# arbusto_cv.z <- arbusto_cv.x %>%
-#   (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
-# arbusto_cv.missing <- is.na(arbusto_cv.z)*1
-# arbusto_cv.sd <- sd(arbusto_cv.z, na.rm = T)
-# arbusto_cv.z[which(is.na(arbusto_cv.z))] <- mean(arbusto_cv.z, na.rm = T)
-# arbusto_cv.lower <- (0 - mean(arbusto_cv.x, na.rm = T)) / sd(arbusto_cv.x, na.rm = T)
+hierbas.x <- data.spp$Covs$hierbas
+hierbas.z <- hierbas.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+hierba_ht.x <- data.spp$Covs$hierba_ht
+hierba_ht.z <- hierba_ht.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+arbusto.x <- data.spp$Covs$arbusto
+arbusto.z <- arbusto.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+pastos.x <- data.spp$Covs$pastos
+pastos.z <- pastos.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+pasto_ht.x <- data.spp$Covs$pasto_ht
+pasto_ht.z <- pasto_ht.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+salsola.x <- data.spp$Covs$salsola
+salsola.z <- salsola.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+salsola_ht.x <- data.spp$Covs$salsola_ht
+salsola_ht.z <- salsola_ht.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
+
+arbusto_cv.x <- data.spp$Covs$arbusto_cv
+arbusto_cv.z <- arbusto_cv.x %>%
+  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))
 
 drone.z <- data.spp$Covs %>% ungroup() %>%
   select(Mesquite_5m:Distance_to_Fence) %>%
@@ -159,7 +131,7 @@ for(i in 1:length(first)) {
 
 # Function for setting initial values in JAGS
 inits <- function()
-  list(z = z.init, B0 = rnorm(1, 4.8, 1), B = rep(0,ncovs), p = 0.9, psi = 0.5)
+  list(z = z.init, B0 = matrix(rnorm(nSite*nSeason, 4.8, 1), nrow = nSite, ncol = nSeason), p = 0.9, psi = 0.5)
 
 # Fit model
 data <- list()
@@ -182,22 +154,20 @@ rm(st.time,end.time)
 # Gather, combine, and summarize JAGS saves from hard drive #
 rsav <- recoverSaves(str_c("saveJAGS/", save.out, "/modsave"))
 mod.raw <- combineSaves(rsav)
-Rhat <- gelman.diag(mod.raw)$psrf[, 2]
-neff <- effectiveSize(mod.raw)
+mod <- sumJAGS(mod.raw)
 
 # Check the basics
-#max(out$summary[,"Rhat"])
-max(Rhat)
-#sort(Rhat, decreasing = T)
-#traceplot(mod.raw[, "B.drone[4]"])
+max(mod$summary[,"Rhat"])
+#sort(mod$summary[,"Rhat"], decreasing = T)
+#traceplot(mod$sims.array[, "B.DOS"])
 
-#min(out$summary[,"n.eff"])
-min(neff)
-#sort(neff)
+min(mod$summary[,"n.eff"])
+#sort(mod$summary[,"n.eff"])
 
 # traceplots #
 pdf(file=str_c(save.out, '_traceplots.pdf'))
 plot.params <- params.saved <- parameters
+plot.params <- plot.params[which(plot.params %in% names(mod$sims.list))]
 for(i in 1:length(plot.params)) {
   par.i <- plot.params[i]
   pars.lst <- params.saved[which(substring(params.saved,1,nchar(par.i))==par.i)]
@@ -223,7 +193,4 @@ dev.off()
 
 # Save output
 library(R.utils)
-#saveObject(out, save.out)
-mod <- simsList(mod.raw)
-mod <- list(sims.list = mod, Rhat = Rhat, neff = neff)
 saveObject(mod, save.out)
