@@ -87,7 +87,7 @@ p.mean=0
 psi.mean=0
 D.bar=0
 
-#adapt.iter=1000  	# adaptation interval 
+adapt.iter=1000  	# adaptation interval 
 keep.vec=rep(0,n.mcmc)
 
 acc.target=.3
@@ -179,7 +179,7 @@ for(k in 1:n.mcmc){
   p.save[k]=p
   psi.save[k]=psi
 
-}; cat("\n")
+};  cat("\n")
 
 ###
 ###  Calculate DIC 

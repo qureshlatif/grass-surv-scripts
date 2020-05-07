@@ -6,17 +6,9 @@ library(abind)
 library(RcppArmadillo)
 library(tictoc)
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
-
-#________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-Rcpp::sourceCpp('grass-surv-scripts/CJSRL4fwdalg.cpp')
-Rcpp::sourceCpp('grass-surv-scripts/CJSRL5fwdalg.cpp')
-source("grass-surv-scripts/CJSRL.hmm.adapt.mcmc.R")
-n.mcmc=200000
 save.out <- str_c("mod_mcmcR_CJSRLtest_", spp)
-#______________________________#
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -70,13 +62,85 @@ Y <- ymat
 
 n=dim(Y)[1]
 J=dim(Y)[2]
-image(1:J,1:n,t(Y),col=c(5,3,2),main="Y",xlab="time",ylab="individual")
+#image(1:J,1:n,t(Y),col=c(5,3,2),main="Y",xlab="time",ylab="individual")
+
+####
+####  Standardize covariates (and orthogonalize another set, just in case you want to use those) 
+####
+
+p.cov=dim(X)[3]
+X.stacked=apply(X,3L,c)
+X.std.stacked=X.stacked
+X.std.stacked[,-1]=scale(X.stacked[,-1])
+X.std=array(X.std.stacked,dim(X))
+
+####
+####  Parallel for PML and CV scoring 
+####
+
+library(doFuture)
+Rcpp::sourceCpp('CJSRL5fwdalg.cpp')
+source("CJSRL.hmm.PML.pred.R")
+
+set.seed(123)
+n.folds=10
+fold.vec=1:n.folds
+idx.rnd=sample(1:n,n,replace=FALSE)
+idx.cuts=round(seq(1,n,,n.folds+1))
+
+idx.list=list("vector",n.folds)
+for(k in 1:n.folds){
+  idx.list[[k]]=sort(idx.rnd[idx.cuts[k]:idx.cuts[k+1]])
+}
+
+n.reg=20
+s.reg.vec=seq(.001,1,,n.reg)
+
+run.grd=expand.grid(fold.vec,s.reg.vec)
+n.run=dim(run.grd)[1]
+
+registerDoFuture()
+plan(multiprocess)
 
 tic()
-out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.01,s.reg=.1,p=.9,p.tune=0.01,psi=.1,psi.tune=0.01,recov.homog=TRUE)  
-toc()
-out$pD
-out$DIC
+tmp.mat <- foreach(j=1:n.run,.combine="rbind") %dopar% {
+  idx.out=idx.list[[run.grd[j,1]]]
+  idx.in=(1:n)[-idx.out]
+  Y.in=Y[idx.in,]
+  Y.out=Y[idx.out,]
+  X.in=X.std[idx.in,,]
+  X.out=X.std[idx.out,,]
+  tmp.out=CJSRL.hmm.PML.pred(Y.in,X.in,Y.out,X.out,s.reg=run.grd[j,2],p=.8728,psi=.0253,fix.ppsi=FALSE)
+  c(tmp.out$score,tmp.out$p.hat,tmp.out$psi.hat,tmp.out$beta.hat) 
+}
+toc.2=toc()
+
+score.vec=rep(0,n.reg)
+for(j in 1:n.reg){
+  score.vec[j]=sum(tmp.mat[run.grd[,2]==s.reg.vec[j],1])
+}
+s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
+
+plot(s.reg.vec,score.vec,type="l",ylab="score",xlab="s.reg")
+abline(v=s.reg.opt,col=rgb(0,0,0,.25))
+
+####
+####  Fit Fully Bayesian Model using MCMC (3 hrs)
+####
+
+Rcpp::sourceCpp('CJSRL4fwdalg.cpp')
+Rcpp::sourceCpp('CJSRL5fwdalg.cpp')
+source("CJSRL.hmm.adapt.mcmc.R")
+
+n.mcmc=200000
+
+tic()
+out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.01,s.reg=s.reg.opt,p=.9,p.tune=0.005,psi=.1,psi.tune=0.005,recov.homog=TRUE,adapt.iter=1000,plot.trace=TRUE)
+toc.3=toc()
+
+#####
+#####  Summarize and Plot Posterior
+#####
 
 layout(matrix(1:3,3,1))
 matplot(t(out$beta.save),type="l",lty=1)
@@ -90,7 +154,7 @@ quantile(out$p.save[out$n.burn:out$n.mcmc],c(0.025,0.975))
 mean(out$psi.save[out$n.burn:out$n.mcmc])
 quantile(out$psi.save[out$n.burn:out$n.mcmc],c(0.025,0.975))
 
-n.rows=floor(sqrt(out$p.cov))
+n.rows=ceiling(sqrt(out$p.cov))
 n.cols=ceiling(sqrt(out$p.cov))
 n.panel=n.rows*n.cols
 layout(matrix(1:n.panel,n.rows,n.cols))
@@ -102,8 +166,4 @@ for(j in 1:out$p.cov){
 layout(matrix(1:2,1,2))
 hist(out$p.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(p),xlim=c(.5,1))
 hist(out$psi.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(psi),xlim=c(0,.5))
-
-library(R.utils)
-saveObject(out, save.out)
-
 
