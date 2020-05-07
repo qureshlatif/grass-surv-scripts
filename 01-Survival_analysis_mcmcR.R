@@ -6,7 +6,10 @@ library(abind)
 library(RcppArmadillo)
 library(tictoc)
 
+setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+
 load("Data_compiled_MissingCovsImputed.RData")
+scripts.loc <- "grass-surv-scripts/"
 spp <- "BAIS" # BAIS or GRSP
 save.out <- str_c("mod_mcmcR_CJSRLtest_", spp)
 
@@ -69,18 +72,20 @@ J=dim(Y)[2]
 ####
 
 p.cov=dim(X)[3]
-X.stacked=apply(X,3L,c)
-X.std.stacked=X.stacked
-X.std.stacked[,-1]=scale(X.stacked[,-1])
-X.std=array(X.std.stacked,dim(X))
+# Already standardized above, so don't think I need this.
+# X.stacked=apply(X,3L,c)
+# X.std.stacked=X.stacked
+# X.std.stacked[,-1]=scale(X.stacked[,-1])
+# X.std=array(X.std.stacked,dim(X))
+X.std <- X
 
 ####
 ####  Parallel for PML and CV scoring 
 ####
 
 library(doFuture)
-Rcpp::sourceCpp('CJSRL5fwdalg.cpp')
-source("CJSRL.hmm.PML.pred.R")
+Rcpp::sourceCpp(str_c(scripts.loc, 'CJSRL5fwdalg.cpp'))
+source(str_c(scripts.loc, "CJSRL.hmm.PML.pred.R"))
 
 set.seed(123)
 n.folds=10
@@ -128,9 +133,9 @@ abline(v=s.reg.opt,col=rgb(0,0,0,.25))
 ####  Fit Fully Bayesian Model using MCMC (3 hrs)
 ####
 
-Rcpp::sourceCpp('CJSRL4fwdalg.cpp')
-Rcpp::sourceCpp('CJSRL5fwdalg.cpp')
-source("CJSRL.hmm.adapt.mcmc.R")
+#Rcpp::sourceCpp('CJSRL4fwdalg.cpp') # Model with decaying dead recovery function (will likely archive)
+Rcpp::sourceCpp(str_c(scripts.loc, 'CJSRL5fwdalg.cpp'))
+source(str_c(scripts.loc,"CJSRL.hmm.adapt.mcmc.R"))
 
 n.mcmc=200000
 
