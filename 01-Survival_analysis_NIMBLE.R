@@ -1,5 +1,4 @@
-library(jagsUI)
-#library(saveJAGS)
+library(nimble)
 library(stringr)
 library(dplyr)
 
@@ -8,7 +7,7 @@ load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-model.file <- "grass-surv-scripts/model_CJSRLHomog_Dot.jags"
+model.file <- "grass-surv-scripts/model_CJSRLHomog_Dot.nimble"
 
 # MCMC values
 nc <- 3 # number of chains
