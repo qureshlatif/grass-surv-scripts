@@ -11,7 +11,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 spp <- "BAIS" # BAIS or GRSP
-save.out <- str_c("mod_mcmcR_CJSRLtest_", spp)
+save.out <- str_c("mod_mcmcR_CJSRL_", spp)
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -28,17 +28,36 @@ nSite <- max(SiteInd)
 
 # Covariates #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
-DOSdepl <- data.spp$Covs$firstDay
-time_since_depl <- DOS - DOSdepl
-after_depl <- (time_since_depl > 0)*1
+# DOSdepl <- data.spp$Covs$firstDay
+# time_since_depl <- DOS - DOSdepl
+# after_depl <- (time_since_depl > 0)*1
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
 DOS2 <- DOS^2
 
-drone.z <- data.spp$Covs %>% ungroup() %>%
+temp.min <- temp.prec7 <- array(NA, dim = dim(DOS))
+for(i in 1:nBird) {
+  ind <- dat.temp %>%
+    filter(Site == data.spp$Covs$Site[i] &
+             Season == data.spp$Covs$Season[i]) %>%
+    pull(DOS)
+  temp.min[i, ind] <- dat.temp %>%
+    filter(Site == data.spp$Covs$Site[i] &
+             Season == data.spp$Covs$Season[i]) %>%
+    pull(temp.min)
+  temp.prec7[i, ind] <- dat.temp %>%
+    filter(Site == data.spp$Covs$Site[i] &
+             Season == data.spp$Covs$Season[i]) %>%
+    pull(temp.prec7)
+}
+temp.min <- (temp.min - mean(temp.min[which(!is.na(ymat))])) / sd(temp.min[which(!is.na(ymat))])
+temp.min[which(is.na(temp.min))] <- 0
+temp.prec7 <- (temp.prec7 - mean(temp.prec7[which(!is.na(ymat))])) / sd(temp.prec7[which(!is.na(ymat))])
+temp.prec7[which(is.na(temp.prec7))] <- 0
+
+Veg.z <- data.spp$Covs %>% ungroup() %>%
   select(Mesquite_5m:Distance_to_Fence) %>%
-  select(contains("_100m"), Distance_to_Fence) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
-  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
+#  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
   data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
@@ -62,6 +81,19 @@ peso.z <- peso.x %>%
 
 X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
 Y <- ymat
+
+X.nams <- c("Intercept",
+            "DOS", "DOS2",
+            data.spp$Covs %>% ungroup() %>%
+              select(Mesquite_5m:Distance_to_Fence) %>%
+              select(contains("_100m"), Distance_to_Fence) %>% names,
+            str_c(data.spp$Covs %>% ungroup() %>%
+                    select(Mesquite_5m:Distance_to_Fence) %>%
+                    select(contains("_100m"), Distance_to_Fence) %>% names, "_sqrd"),
+            droneCV.z <- data.spp$Covs %>%
+              select(Mesquite_5m_CV:Mean_Shrub_Height_500m_CV) %>%
+              select(contains("_100m")) %>% names,
+            "peso")
 
 n=dim(Y)[1]
 J=dim(Y)[2]

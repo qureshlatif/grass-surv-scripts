@@ -6,7 +6,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 # Simulated weather data #
 dat.sim <- read.csv("weather/dailyweather_meteoblue_all.csv", header = T, stringsAsFactors = F) %>%
   mutate(date = date %>% str_sub(1, 10) %>% ymd()) %>%
-  select(site, date, temp.min, temp.mean, precip, wind.mean)
+  select(site, date, temp.min, temp.mean)
 
 # Weather station data #
 dat.field <- read.csv("weather/Janos.dailyweather.1219.csv", header = T, stringsAsFactors = F) %>%
@@ -54,7 +54,12 @@ dat.field <- dat.field %>%
 dat.add <- read.csv("weather/vaco_dailyweather.csv", header = T, stringsAsFactors = F) %>%
   mutate(date = dmy(date),
          site = "vaco") %>%
-  select(site, date, temp.min, temp.mean, precip, wind.mean)
+  select(site, date, temp.min, temp.mean, precip, wind.mean) %>%
+  full_join(
+    read.csv("weather/vaco_precip.csv", header = T, stringsAsFactors = F) %>%
+      mutate(date = dmy(date)) %>%
+      rename(precip_suppl = precip), by = "date"
+  )
 dat.field <- dat.field %>%
   bind_rows(dat.add)
 rm(dat.add)

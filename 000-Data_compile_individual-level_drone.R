@@ -2,7 +2,7 @@ library(tidyverse)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
-# 7. Attach drone variables
+# Attach drone variables
 dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, stringsAsFactors = F) %>%
   filter(!is.na(Distance_to_Fence)) %>% # Removes records with no data at all.
   select(Site, Season, anillo, contains("m_Mesquite"), contains("m_Mimosa"), contains("m_Juniper"), contains("m_Yucca"),

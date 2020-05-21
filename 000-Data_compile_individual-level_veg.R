@@ -103,12 +103,26 @@ dat.indveg <- dat.locations %>%
             desnudo_grid = mean(desnudo_grid, na.rm = T)) %>%
   left_join(dat.locations %>%
               group_by(Site, Season, anillo) %>%
-              summarise(arbusto_sd = sd(arbusto, na.rm = T),
+              summarise(hierbas_sd = sd(hierbas, na.rm = T),
+                        hierba_ht_sd = sd(hierba_ht, na.rm = T),
+                        arbusto_sd = sd(arbusto, na.rm = T),
+                        arbusto_ht_sd = sd(arbusto_ht, na.rm = T),
                         pastos_sd = sd(pastos, na.rm = T),
                         pasto_ht_sd = sd(pasto_ht, na.rm = T),
+                        salsola_sd = sd(salsola, na.rm = T),
+                        salsola_ht_sd = sd(salsola_ht, na.rm = T),
+                        otra_sd = sd(otra, na.rm = T),
+                        desnudo_sd = sd(desnudo, na.rm = T),
+                        hierbas_sd_grid = sd(hierbas_grid, na.rm = T),
+                        hierba_ht_sd_grid = sd(hierba_ht_grid, na.rm = T),
                         arbusto_sd_grid = sd(arbusto_grid, na.rm = T),
+                        arbusto_ht_sd_grid = sd(arbusto_ht_grid, na.rm = T),
                         pastos_sd_grid = sd(pastos_grid, na.rm = T),
-                        pasto_ht_sd_grid = sd(pasto_ht_grid, na.rm = T)),
+                        pasto_ht_sd_grid = sd(pasto_ht_grid, na.rm = T),
+                        salsola_sd_grid = sd(salsola_grid, na.rm = T),
+                        salsola_ht_sd_grid = sd(salsola_ht_grid, na.rm = T),
+                        otra_sd_grid = sd(otra_grid, na.rm = T),
+                        desnudo_sd_grid = sd(desnudo_grid, na.rm = T)),
             by = c("Site", "Season", "anillo")) %>%
   left_join(dat.locations %>%
               group_by(Site, Season, anillo) %>%
@@ -136,18 +150,46 @@ dat.indveg <- dat.locations %>%
                         desnudo_grid_n = sum(!is.na(desnudo_grid))),
             by = c("Site", "Season", "anillo")) %>%
   ungroup %>%
-  mutate(arbusto_sd = arbusto_sd / arbusto,
+  mutate(hierbas_sd = hierbas_sd / hierbas,
+         hierba_ht_sd = hierba_ht_sd / hierba_ht,
+         arbusto_sd = arbusto_sd / arbusto,
+         arbusto_ht_sd = arbusto_ht_sd / arbusto_ht,
          pastos_sd = pastos_sd / pastos,
          pasto_ht_sd = pasto_ht_sd / pasto_ht,
+         salsola_sd = salsola_sd / salsola,
+         salsola_ht_sd = salsola_ht_sd / salsola_ht,
+         otra_sd = otra_sd / otra,
+         desnudo_sd = desnudo_sd / otra,
+         hierbas_sd_grid = hierbas_sd_grid / hierbas_grid,
+         hierba_ht_sd_grid = hierba_ht_sd_grid / hierba_ht_grid,
          arbusto_sd_grid = arbusto_sd_grid / arbusto_grid,
+         arbusto_ht_sd_grid = arbusto_ht_sd_grid / arbusto_ht_grid,
          pastos_sd_grid = pastos_sd_grid / pastos_grid,
-         pasto_ht_sd_grid = pasto_ht_sd_grid / pasto_ht_grid) %>%
-  rename(arbusto_cv = arbusto_sd,
+         pasto_ht_sd_grid = pasto_ht_sd_grid / pasto_ht_grid,
+         salsola_sd_grid = salsola_sd_grid / salsola_grid,
+         salsola_ht_sd_grid = salsola_ht_sd_grid / salsola_ht_grid,
+         otra_sd_grid = otra_sd_grid / otra_grid,
+         desnudo_sd_grid = desnudo_sd_grid / desnudo_grid) %>%
+  rename(hierbas_cv = hierbas_sd,
+         hierba_ht_cv = hierba_ht_sd,
+         arbusto_cv = arbusto_sd,
+         arbusto_ht_cv = arbusto_ht_sd,
          pastos_cv = pastos_sd,
          pasto_ht_cv = pasto_ht_sd,
+         salsola_cv = salsola_sd,
+         salsola_ht_cv = salsola_ht_sd,
+         otra_cv = otra_sd,
+         desnudo_cv = desnudo_sd,
+         hierbas_cv_grid = hierbas_sd_grid,
+         hierba_ht_cv_grid = hierba_ht_sd_grid,
          arbusto_cv_grid = arbusto_sd_grid,
+         arbusto_ht_cv_grid = arbusto_ht_sd_grid,
          pastos_cv_grid = pastos_sd_grid,
-         pasto_ht_cv_grid = pasto_ht_sd_grid)
+         pasto_ht_cv_grid = pasto_ht_sd_grid,
+         salsola_cv_grid = salsola_sd_grid,
+         salsola_ht_cv_grid = salsola_ht_sd_grid,
+         otra_cv_grid = otra_sd_grid,
+         desnudo_cv_grid = desnudo_sd_grid)
 
 # 4. Calculate correlations between bird- and grid-based versions of covariates in years when both were present.
 vars <- c("hierbas", "hierba_ht", "arbusto", "arbusto_cv", "arbusto_ht", "pastos",
@@ -180,14 +222,19 @@ dat.indveg <- dat.indveg %>%
 
 # 6. Prune unneeded columns and save
 dat.indveg <- dat.indveg %>%
-  select(Site:desnudo, arbusto_cv:pasto_ht_cv,
+  select(Site:desnudo, hierbas_cv:desnudo_cv,
          hierbas_n:desnudo_n, pastos_pred:desnudo_predsd)
 trim <- (dat.indveg %>%
-  select(hierbas:pastos_cv,
+  select(hierbas:otra, desnudo:desnudo_cv,
          pastos_pred:desnudo_predsd) %>%
   data.matrix %>%
   apply(1, function(x) sum(!is.na(x)))) > 0
 trim.ind <- which(trim)
 dat.indveg <- dat.indveg %>% slice(trim.ind)
+
+# Fix Inf value for desnudo_cv (not sure why this comes up)
+vals <- dat.locations %>% filter(Season == "2017-2018" & anillo == 272162804) %>% pull(desnudo)
+dat.indveg$desnudo_cv[which(dat.indveg$Season == "2017-2018" & dat.indveg$anillo == 272162804)] <-
+  sd(vals)/mean(vals)
 
 write.csv(dat.indveg, "Veg_individual.csv", row.names = F)

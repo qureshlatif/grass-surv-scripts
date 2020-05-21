@@ -5,7 +5,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
 minDOS <- 317 # Sets first day of season - currently corresponds with 11/12/2012
 
-dat.banding <- read.csv("wintersurvival_accessDBs/ExportedTables/Anillamiento_forImport.csv", stringsAsFactors = F) %>%
+dat.banding <- read.csv("Banding_data_plus.csv", header = T, stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday) %>%
   filter(captura != 6) %>%
@@ -63,6 +63,19 @@ dat.trans$DOSrecup[ind.beforeD31] <- dat.trans$DOSrecup[ind.beforeD31] - (minDOS
 D31 <- (dat.trans$fecha_recup %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy %>% yday)  - (minDOS - 1)
 dat.trans$DOSrecup[ind.afterD31] <- dat.trans$DOSrecup[ind.afterD31] + D31[ind.afterD31]
 rm(D31)
+
+# ***Temp fix mismatched species (remove after fixing in raw data)*** #
+dat.locations$especie[which(dat.locations$anillo == 272137988)] <- "GRSP"
+dat.trans$especie[which(dat.trans$anillo == 272137988)] <- "GRSP"
+
+dat.locations$especie[which(dat.locations$anillo == 262124826)] <- "BAIS"
+dat.trans$especie[which(dat.trans$anillo == 262124826)] <- "BAIS"
+
+dat.locations$especie[which(dat.locations$anillo == 240112984)] <- "BAIS"
+dat.trans$especie[which(dat.trans$anillo == 240112984)] <- "BAIS"
+
+dat.locations$especie[which(dat.locations$anillo == 281110946 )] <- "BAIS"
+dat.trans$especie[which(dat.trans$anillo == 281110946 )] <- "BAIS"
 
 # (Temp) Export transmitters with 8/8/8888s for fecha recup #
 # dat.export <- dat.trans %>% filter(fecha_recup == "8/8/8888")
@@ -289,12 +302,14 @@ for(sp in species[1:2]) {
   Covs <- Covs %>% left_join(dat.banding %>%
                                distinct(Site, Season, anillo, DOS, .keep_all = T) %>%
                                filter(especie == sp) %>%
-                               select(Site, Season, anillo, grasa, peso) %>%
+                               select(Site, Season, anillo, grasa, peso, female, adult) %>%
                                mutate(grasa = ifelse(grasa == -9, NA, grasa),
                                       peso = ifelse(peso == -999, NA, peso)) %>%
                                group_by(Site, Season, anillo) %>%
                                summarise(grasa = mean(grasa, na.rm = T), # If there > 1 capture with a value, calculate mean.
-                                         peso = mean(peso, na.rm = T)),  # If there > 1 capture with a value, calculate mean.
+                                         peso = mean(peso, na.rm = T), # If there > 1 capture with a value, calculate mean.
+                                         female = mean(female, na.rm = T), # If there > 1 capture with a value, calculate mean.
+                                         adult = mean(adult, na.rm = T)),  # If there > 1 capture with a value, calculate mean.
                                by = c("Site", "Season", "anillo")) %>%
     left_join(dat.veg, by = c("Site", "Season", "anillo")) %>%
     left_join(dat.drone, by = c("Site", "Season", "anillo"))

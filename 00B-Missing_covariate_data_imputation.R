@@ -2,17 +2,16 @@ library(tidyverse)
 library(randomForest)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled_knownFate.RData")
-#load("Data_compiled.RData")
-
+#load("Data_compiled_knownFate.RData")
+load("Data_compiled.RData")
 
 vars <- names(data.BAIS$Covs)
 vars <- vars[c(which(vars == "hierbas"):which(vars == "otra"),
-               which(vars == "desnudo"):which(vars == "pasto_ht_cv"),
+               which(vars == "desnudo"):which(vars == "desnudo_cv"),
                which(vars == "Mesquite_5m"):which(vars == "Mean_Shrub_Height_500m_CV"))]
 vars.drone <- vars[which(vars == "Mesquite_5m"):which(vars == "Mean_Shrub_Height_500m_CV")]
 vars.field <- vars[-which(vars %in% vars.drone)]
-vars.field.shrub <- vars.field[c(3, 4, 11)]
+vars.field.shrub <- vars.field[c(3, 4, 13, 14)]
 vars.field.ground <- vars.field[-which(vars.field %in% vars.field.shrub)]
 
 # data.BAIS$Covs %>%
@@ -36,12 +35,12 @@ for(spp in species[1:2]) {
   miss.fill <- data.spp$Covs %>% select(one_of(vars.drone)) %>% summarize_all(function(x) mean(x, na.rm = T))
   data.spp$Covs[miss, vars.drone] <- miss.fill
   
-  # Impute grass cover and bare ground with grid-based values where available #
-  data.spp$Covs <- data.spp$Covs %>%
-    mutate(pastos = ifelse(is.na(pastos) & !is.na(pastos_pred),
-                           pastos_pred, pastos),
-           desnudo = ifelse(is.na(desnudo) & !is.na(desnudo_pred),
-                           pastos_pred, desnudo))
+  # # Impute grass cover and bare ground with grid-based values where available #
+  # data.spp$Covs <- data.spp$Covs %>%
+  #   mutate(pastos = ifelse(is.na(pastos) & !is.na(pastos_pred),
+  #                          pastos_pred, pastos),
+  #          desnudo = ifelse(is.na(desnudo) & !is.na(desnudo_pred),
+  #                          pastos_pred, desnudo))
   
   # Impute missing field-measured shrub variables based on drone data #
   for(v in vars.field.shrub) {
@@ -68,5 +67,5 @@ for(spp in species[1:2]) {
 
 rm(data.spp, miss.fill, rf, ind.known, ind.missing, miss, spp, v, v.complete,
    vars, vars.drone, vars.field, vars.field.ground, vars.field.shrub)
-#save.image("Data_compiled_MissingCovsImputed.RData")
-save.image("Data_compiled_KnownFateMissingImputed.RData")
+save.image("Data_compiled_MissingCovsImputed.RData")
+#save.image("Data_compiled_KnownFateMissingImputed.RData")

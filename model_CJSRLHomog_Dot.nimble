@@ -1,12 +1,16 @@
 # Note: This version of the model requires chopping off the first column of z with no data.
 model <<- nimbleCode({
 
-#Priors
+# Data #
+
+
+# Priors #
 B0 ~ dnorm(0, 0.6666667)
 psi ~ dunif(0, 1)
 p ~ dunif(0, 1)
 logit(S) <- B0
 
+# Process #
 for(i in 1:nBird) {
   z[i, first[i]] ~ dbern(S)
   for(j in (first[i] + 1):last[i]) {
