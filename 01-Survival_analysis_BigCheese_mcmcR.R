@@ -54,46 +54,53 @@ temp.min[which(is.na(temp.min))] <- 0
 temp.prec7 <- (temp.prec7 - mean(temp.prec7[which(!is.na(ymat))])) / sd(temp.prec7[which(!is.na(ymat))])
 temp.prec7[which(is.na(temp.prec7))] <- 0
 
+X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
+
 Veg.z <- data.spp$Covs %>% ungroup() %>%
-  select(Mesquite_5m:Distance_to_Fence) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
-#  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
-  data.matrix() %>%
+  select(hierbas, arbusto, pastos, pasto_ht, salsola, otra,
+         Shrub_All_5m, Mean_Shrub_Height_5m, Distance_to_Fence) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
+X.nams <- c(X.nams, names(Veg.z), str_c(names(Veg.z)[-ncol(Veg.z)], "2"))
+Veg.z <- Veg.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
-drone2.z <- drone.z ^ 2
+Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
 
-droneCV.z <- data.spp$Covs %>%
-  select(Mesquite_5m_CV:Mean_Shrub_Height_500m_CV) %>%
-  select(contains("_100m")) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
-  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) %>%
-  data.matrix() %>%
+VegCV.z <- data.spp$Covs %>%
+  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
+X.nams <- c(X.nams, names(VegCV.z))
+VegCV.z <- VegCV.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
-peso.x <- data.spp$Covs$peso
-peso.z <- peso.x %>%
-  (function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)) %>%
-  (function(x) ifelse(is.na(x), mean(x, na.rm = T), x)) %>%
-  array(., c(length(.), nDOS))
+Ind.z <- data.spp$Covs %>% ungroup() %>%
+  select(peso, female, adult) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
+  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x)))
+if(spp == "GRSP") {
+  Ind.z <- Ind.z %>% select(-adult)
+  } else {
+  Ind.z <- Ind.z
+  }
+X.nams <- c(X.nams, names(Ind.z))
+Ind.z <- Ind.z %>% data.matrix() %>%
+  array(., dim = c(dim(.), nDOS)) %>%
+  aperm(c(1, 3, 2))
 
-X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
+Site.z <- data.spp$Covs %>%
+  select(prey, LOSH, raptor, NDVI) %>%
+  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
+X.nams <- c(X.nams, names(Site.z))
+Site.z <- Site.z %>% data.matrix() %>%
+  array(., dim = c(dim(.), nDOS)) %>%
+  aperm(c(1, 3, 2))
+
+X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, temp.min, temp.prec7,
+                  Veg.z, Veg2.z, VegCV.z, Ind.z, Site.z, along = 3)
 Y <- ymat
-
-X.nams <- c("Intercept",
-            "DOS", "DOS2",
-            data.spp$Covs %>% ungroup() %>%
-              select(Mesquite_5m:Distance_to_Fence) %>%
-              select(contains("_100m"), Distance_to_Fence) %>% names,
-            str_c(data.spp$Covs %>% ungroup() %>%
-                    select(Mesquite_5m:Distance_to_Fence) %>%
-                    select(contains("_100m"), Distance_to_Fence) %>% names, "_sqrd"),
-            droneCV.z <- data.spp$Covs %>%
-              select(Mesquite_5m_CV:Mean_Shrub_Height_500m_CV) %>%
-              select(contains("_100m")) %>% names,
-            "peso")
 
 n=dim(Y)[1]
 J=dim(Y)[2]
@@ -149,9 +156,6 @@ for(j in 1:n.run){
   tmp.mat[j,]=c(tmp.out$score,tmp.out$p.hat,tmp.out$psi.hat,tmp.out$beta.hat) 
 };cat("\n")
 toc.2=toc()
-# Takes 7.429914 hours for 42 covariates, n.fold = 10, n.reg = 20
-# Optimal regularization ended up being 0.05357895, which is a bit different from the 0.1 reported by Mevin.
-#    Might need to run more reg levels between 0.05 and 0.1 to resolve the optimum better.
 
 score.vec=rep(0,n.reg)
 for(j in 1:n.reg){
@@ -161,6 +165,48 @@ s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
 
 plot(s.reg.vec,score.vec,type="l",ylab="score",xlab="s.reg")
 abline(v=s.reg.opt,col=rgb(0,0,0,.25))
+
+reg_scores <- cbind(s.reg.vec, score.vec)
+dimnames(reg_scores)[[2]] <- c("Regularization", "Score")
+write.csv(reg_scores, str_c("Reg_scores_", spp, ".csv"), row.names = F)
+
+## Run additional regularization levels for fine-tuning ##
+n.reg=20
+s.reg.vec=seq(.005,.15,,n.reg)
+
+run.grd=expand.grid(fold.vec,s.reg.vec)
+n.run=dim(run.grd)[1]
+tmp.mat=matrix(0,n.run,3+p.cov)
+
+tic()
+for(j in 1:n.run){
+  cat(j," ")
+  idx.out=idx.list[[run.grd[j,1]]]
+  idx.in=(1:n)[-idx.out]
+  Y.in=Y[idx.in,]
+  Y.out=Y[idx.out,]
+  X.in=X.std[idx.in,,]
+  X.out=X.std[idx.out,,]
+  tmp.out=CJSRL.hmm.PML.pred(Y.in,X.in,Y.out,X.out,s.reg=run.grd[j,2],p=.8728,psi=.0253,fix.ppsi=FALSE)
+  tmp.mat[j,]=c(tmp.out$score,tmp.out$p.hat,tmp.out$psi.hat,tmp.out$beta.hat) 
+};cat("\n")
+toc.2=toc()
+
+score.vec=rep(0,n.reg)
+for(j in 1:n.reg){
+  score.vec[j]=sum(tmp.mat[run.grd[,2]==s.reg.vec[j],1])
+}
+s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
+
+reg_scores <- cbind(s.reg.vec, score.vec)
+dimnames(reg_scores)[[2]] <- c("Regularization", "Score")
+reg_scores <- rbind(reg_scores,
+                    read.csv(str_c("Reg_scores_", spp, ".csv"), stringsAsFactors = F))
+  
+
+plot(reg_scores[, "Regularization"], reg_scores[, "Score"], ylab="score", xlab="s.reg")
+abline(v=s.reg.opt,col=rgb(0,0,0,.25))
+write.csv(reg_scores, str_c("Reg_scores_", spp, ".csv"), row.names = F)
 
 ####
 ####  Fit Fully Bayesian Model using MCMC (3 hrs)
