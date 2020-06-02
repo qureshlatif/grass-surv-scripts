@@ -11,99 +11,13 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 spp <- "BAIS" # BAIS or GRSP
-save.out <- str_c("mod_mcmcR_CJSRL_", spp)
+mod.nam <- "BigCheese"
+chain <- 1 # If running parallel chains
+save.out <- str_c("mod_mcmcR_BigCheese_", spp)
 
-# Detection data #
-data.spp <- str_c("data.", spp) %>% as.name %>% eval
-ymat <- data.spp$ymat
-first <- data.spp$Covs$firstDay
-last <- data.spp$Covs$lastDay
-last.alive <- data.spp$Covs$lastAlive
-nBird <- nrow(ymat)
-nDOS <- ncol(ymat)
-SeasonInd <- data.spp$Covs$SeasonInd
-nSeason <- max(SeasonInd)
-SiteInd <- data.spp$Covs$SiteInd
-nSite <- max(SiteInd)
+# Compile detection data #
+source(str_c(scripts.loc, "Data_processing_BigCheese.R"))
 
-# Covariates #
-DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
-# DOSdepl <- data.spp$Covs$firstDay
-# time_since_depl <- DOS - DOSdepl
-# after_depl <- (time_since_depl > 0)*1
-DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
-DOS2 <- DOS^2
-
-temp.min <- temp.prec7 <- array(NA, dim = dim(DOS))
-for(i in 1:nBird) {
-  ind <- dat.temp %>%
-    filter(Site == data.spp$Covs$Site[i] &
-             Season == data.spp$Covs$Season[i]) %>%
-    pull(DOS)
-  temp.min[i, ind] <- dat.temp %>%
-    filter(Site == data.spp$Covs$Site[i] &
-             Season == data.spp$Covs$Season[i]) %>%
-    pull(temp.min)
-  temp.prec7[i, ind] <- dat.temp %>%
-    filter(Site == data.spp$Covs$Site[i] &
-             Season == data.spp$Covs$Season[i]) %>%
-    pull(temp.prec7)
-}
-temp.min <- (temp.min - mean(temp.min[which(!is.na(ymat))])) / sd(temp.min[which(!is.na(ymat))])
-temp.min[which(is.na(temp.min))] <- 0
-temp.prec7 <- (temp.prec7 - mean(temp.prec7[which(!is.na(ymat))])) / sd(temp.prec7[which(!is.na(ymat))])
-temp.prec7[which(is.na(temp.prec7))] <- 0
-
-X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
-
-Veg.z <- data.spp$Covs %>% ungroup() %>%
-  select(hierbas, arbusto, pastos, pasto_ht, salsola, otra,
-         Shrub_All_5m, Mean_Shrub_Height_5m, Distance_to_Fence) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
-X.nams <- c(X.nams, names(Veg.z), str_c(names(Veg.z)[-ncol(Veg.z)], "2"))
-Veg.z <- Veg.z %>% data.matrix() %>%
-  array(., dim = c(dim(.), nDOS)) %>%
-  aperm(c(1, 3, 2))
-
-Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
-
-VegCV.z <- data.spp$Covs %>%
-  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_50m_CV, Shrub_All_500m_CV,
-         Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
-X.nams <- c(X.nams, names(VegCV.z))
-VegCV.z <- VegCV.z %>% data.matrix() %>%
-  array(., dim = c(dim(.), nDOS)) %>%
-  aperm(c(1, 3, 2))
-
-Ind.z <- data.spp$Covs %>% ungroup() %>%
-  select(peso, female, adult) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T))) %>%
-  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x)))
-if(spp == "GRSP") {
-  Ind.z <- Ind.z %>% select(-adult)
-  } else {
-  Ind.z <- Ind.z
-  }
-X.nams <- c(X.nams, names(Ind.z))
-Ind.z <- Ind.z %>% data.matrix() %>%
-  array(., dim = c(dim(.), nDOS)) %>%
-  aperm(c(1, 3, 2))
-
-Site.z <- data.spp$Covs %>%
-  select(prey, LOSH, raptor, NDVI) %>%
-  mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
-X.nams <- c(X.nams, names(Site.z))
-Site.z <- Site.z %>% data.matrix() %>%
-  array(., dim = c(dim(.), nDOS)) %>%
-  aperm(c(1, 3, 2))
-
-X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, temp.min, temp.prec7,
-                  Veg.z, Veg2.z, VegCV.z, Ind.z, Site.z, along = 3)
-Y <- ymat
-
-n=dim(Y)[1]
-J=dim(Y)[2]
 #image(1:J,1:n,t(Y),col=c(5,3,2),main="Y",xlab="time",ylab="individual")
 
 ####
@@ -138,6 +52,8 @@ for(k in 1:n.folds){
 
 n.reg=20
 s.reg.vec=seq(.001,1,,n.reg)
+s.reg.vec=c(s.reg.vec[-which(s.reg.vec > 0.003 & s.reg.vec < 0.3)], seq(.003,0.3,,n.reg))# Add more at higher regs
+n.reg <- length(s.reg.vec)
 
 run.grd=expand.grid(fold.vec,s.reg.vec)
 n.run=dim(run.grd)[1]
@@ -163,50 +79,50 @@ for(j in 1:n.reg){
 }
 s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
 
-plot(s.reg.vec,score.vec,type="l",ylab="score",xlab="s.reg")
+plot(s.reg.vec,score.vec,ylab="score",xlab="s.reg") #,type="l"
 abline(v=s.reg.opt,col=rgb(0,0,0,.25))
 
 reg_scores <- cbind(s.reg.vec, score.vec)
 dimnames(reg_scores)[[2]] <- c("Regularization", "Score")
 write.csv(reg_scores, str_c("Reg_scores_", spp, ".csv"), row.names = F)
 
-## Run additional regularization levels for fine-tuning ##
-n.reg=20
-s.reg.vec=seq(.005,.15,,n.reg)
-
-run.grd=expand.grid(fold.vec,s.reg.vec)
-n.run=dim(run.grd)[1]
-tmp.mat=matrix(0,n.run,3+p.cov)
-
-tic()
-for(j in 1:n.run){
-  cat(j," ")
-  idx.out=idx.list[[run.grd[j,1]]]
-  idx.in=(1:n)[-idx.out]
-  Y.in=Y[idx.in,]
-  Y.out=Y[idx.out,]
-  X.in=X.std[idx.in,,]
-  X.out=X.std[idx.out,,]
-  tmp.out=CJSRL.hmm.PML.pred(Y.in,X.in,Y.out,X.out,s.reg=run.grd[j,2],p=.8728,psi=.0253,fix.ppsi=FALSE)
-  tmp.mat[j,]=c(tmp.out$score,tmp.out$p.hat,tmp.out$psi.hat,tmp.out$beta.hat) 
-};cat("\n")
-toc.2=toc()
-
-score.vec=rep(0,n.reg)
-for(j in 1:n.reg){
-  score.vec[j]=sum(tmp.mat[run.grd[,2]==s.reg.vec[j],1])
-}
-s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
-
-reg_scores <- cbind(s.reg.vec, score.vec)
-dimnames(reg_scores)[[2]] <- c("Regularization", "Score")
-reg_scores <- rbind(reg_scores,
-                    read.csv(str_c("Reg_scores_", spp, ".csv"), stringsAsFactors = F))
-  
-
-plot(reg_scores[, "Regularization"], reg_scores[, "Score"], ylab="score", xlab="s.reg")
-abline(v=s.reg.opt,col=rgb(0,0,0,.25))
-write.csv(reg_scores, str_c("Reg_scores_", spp, ".csv"), row.names = F)
+# ## Run additional regularization levels for fine-tuning ##
+# n.reg=20
+# s.reg.vec=seq(.005,.15,,n.reg)
+# 
+# run.grd=expand.grid(fold.vec,s.reg.vec)
+# n.run=dim(run.grd)[1]
+# tmp.mat=matrix(0,n.run,3+p.cov)
+# 
+# tic()
+# for(j in 1:n.run){
+#   cat(j," ")
+#   idx.out=idx.list[[run.grd[j,1]]]
+#   idx.in=(1:n)[-idx.out]
+#   Y.in=Y[idx.in,]
+#   Y.out=Y[idx.out,]
+#   X.in=X.std[idx.in,,]
+#   X.out=X.std[idx.out,,]
+#   tmp.out=CJSRL.hmm.PML.pred(Y.in,X.in,Y.out,X.out,s.reg=run.grd[j,2],p=.8728,psi=.0253,fix.ppsi=FALSE)
+#   tmp.mat[j,]=c(tmp.out$score,tmp.out$p.hat,tmp.out$psi.hat,tmp.out$beta.hat) 
+# };cat("\n")
+# toc.2=toc()
+# 
+# score.vec=rep(0,n.reg)
+# for(j in 1:n.reg){
+#   score.vec[j]=sum(tmp.mat[run.grd[,2]==s.reg.vec[j],1])
+# }
+# s.reg.opt=s.reg.vec[score.vec==min(score.vec)]
+# 
+# reg_scores <- cbind(s.reg.vec, score.vec)
+# dimnames(reg_scores)[[2]] <- c("Regularization", "Score")
+# reg_scores <- rbind(reg_scores,
+#                     read.csv(str_c("Reg_scores_", spp, ".csv"), stringsAsFactors = F))
+#   
+# 
+# plot(reg_scores[, "Regularization"], reg_scores[, "Score"], ylab="score", xlab="s.reg")
+# abline(v=s.reg.opt,col=rgb(0,0,0,.25))
+# write.csv(reg_scores, str_c("Reg_scores_", spp, ".csv"), row.names = F)
 
 ####
 ####  Fit Fully Bayesian Model using MCMC (3 hrs)
@@ -217,6 +133,9 @@ Rcpp::sourceCpp(str_c(scripts.loc, 'CJSRL5fwdalg.cpp'))
 source(str_c(scripts.loc, "CJSRL.hmm.adapt.mcmc.R"))
 
 n.mcmc=200000
+rm(.Random.seed, envir=.GlobalEnv)
+#s.reg.opt <- 0.0811578947368421 # For BAIS
+#s.reg.opt <- 0.0498947368421053 # For GRSP
 
 tic()
 out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.01,s.reg=s.reg.opt,p=.9,p.tune=0.005,psi=.1,psi.tune=0.005,recov.homog=TRUE,adapt.iter=1000,plot.trace=TRUE)
@@ -225,6 +144,10 @@ toc.3=toc()
 #####
 #####  Summarize and Plot Posterior
 #####
+
+# If loading model outputs from previous runs
+library(R.utils)
+out <- loadObject(str_c("mod_mcmcR_", mod.nam, "_", chain, "_", spp))
 
 layout(matrix(1:3,3,1))
 matplot(t(out$beta.save),type="l",lty=1)
@@ -251,3 +174,22 @@ layout(matrix(1:2,1,2))
 hist(out$p.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(p),xlim=c(.5,1))
 hist(out$psi.save[out$n.burn:n.mcmc],col=rgb(0,0,0,.25),breaks=40,prob=TRUE,main="",xlab=bquote(psi),xlim=c(0,.5))
 
+## Assess convergence and combine chains ##
+library(R.utils)
+out1 <- loadObject(str_c("mod_mcmcR_", mod.nam, "_1_", spp))
+out2 <- loadObject(str_c("mod_mcmcR_", mod.nam, "_2_", spp))
+
+out1.arr <- rbind(out1$beta.save, out1$p.save, out1$psi.save)
+out1.arr <- out1.arr[,-(1:out1$n.burn)]
+out2.arr <- rbind(out2$beta.save, out2$p.save, out2$psi.save)
+out2.arr <- out2.arr[,-(1:out2$n.burn)]
+
+#W <- 
+
+sims.array <- abind::abind(out1.arr, out2.arr, along = 3)
+dimnames(sims.array)[[1]] <- c(str_c("B.", X.nams), "p", "psi")
+sims.concat <- cbind(out1.arr, out2.arr)
+dimnames(sims.concat)[[1]] <- c(str_c("B.", X.nams), "p", "psi")
+
+out <- list(mod.raw = list(chain1 = out1, chain2 = out2), sims.array = sims.array, sims.concat = sims.concat)
+saveObject(out, save.out)

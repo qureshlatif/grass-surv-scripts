@@ -56,7 +56,7 @@ dat.NDVI <- read.csv("NDVI_Nonbreeding_SRV_sites.csv", header = T, stringsAsFact
 
 ## Consolidate site-level covariates ##
 dat.site <- SiteSeasons %>%
-  left_join(dat.dens, by = c("Site", "Season")) %.%
+  left_join(dat.dens, by = c("Site", "Season")) %>%
   left_join(dat.NDVI, by = c("Site", "Season"))
   
 

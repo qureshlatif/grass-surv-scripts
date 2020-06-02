@@ -6,7 +6,9 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 #load("Data_compiled_MissingCovsImputed.RData")
 load("Data_compiled.RData")
 
-#### Explore and tabulate correlations among field veg and drone variables ####
+#########################################################################
+# Explore and tabulate correlations among field veg and drone variables #
+#########################################################################
 
 ## Baird's Sparrow ##
 data.BAIS$Covs %>%
@@ -66,7 +68,9 @@ data.GRSP$Covs %>%
   corrplot(method = "ellipse", addCoefasPercent = T, diag = F, tl.cex = 0.5)
 dev.off()
 
-#### Tabulate counts of missing values for field veg and drone variables ####
+#######################################################################
+# Tabulate counts of missing values for field veg and drone variables #
+#######################################################################
 
 load("Data_compiled.RData")
 
@@ -147,3 +151,46 @@ for(i in 1:length(rows)) {
 }
 rm(vals, i)
 write.csv(out, "Percent_days_veg_measured_GRSP.csv")
+
+###############################################################################
+# Explore and tabulate correlations among all variables selected for analysis #
+###############################################################################
+
+load("Data_compiled_MissingCovsImputed.RData")
+scripts.loc <- "grass-surv-scripts/"
+
+spp <- "GRSP" # BAIS or GRSP
+mod.nam <- "BigCheese_prelim"
+source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
+
+X.mat <- matrix(X, prod(dim(X)[1:2]), dim(X)[3])
+dimnames(X.mat)[[2]] <- X.nams
+X.mat[,-1] %>% cor(use = "complete") %>%
+  write.csv(str_c("Correlations_pre-analysis_", spp, ".csv"))
+#write.csv("Correlations_veg_BAIS_fillData.csv")
+
+pdf(str_c("Correlations_pre-analysis_", spp, ".pdf"))
+#pdf("Correlations_veg_BAIS_fillData.pdf")
+X.mat[,-1] %>% cor(use = "complete") %>%
+  corrplot(method = "ellipse", addCoefasPercent = T, diag = F, tl.cex = 0.5)
+dev.off()
+
+# correlated pairs for BAIS (*BAIS only):
+# hierbas, hierbas2 - 0.77
+# arbusto, arbusto2 - 0.68
+# pastos, pasto_ht - 0.65 (drop pastos and keep NDVI & pasto_ht)
+# pastos, NDVI - 0.72 (see above)*
+# salsola, salsola2 - 0.84
+# Shrub_All_5m, Shrub_All_5m2 - 0.84
+# Mean_Shrub_Height_5m, Mean_Shrub_Height_5m2 - 0.78
+# raptor, prey - 0.75 (keep prey, drop raptor)
+
+# correlated pairs for GRSP (*GRSP only):
+# hierbas, hierbas2 - 0.66
+# arbusto, arbusto2 - 0.64
+# pastos, pasto_ht - 0.6 (drop pastos and keep NDVI & pasto_ht?)
+# salsola, salsola2 - 0.72
+# Shrub_All_5m, Shrub_All_5m2 - 0.72
+# Mean_Shrub_Height_5m, Mean_Shrub_Height_5m2 - 0.82
+# hierbas2, arbusto2 - 0.88*
+# Shrub_All_500m_CV, Mean_Shrub_Height_500m_CV - 0.75*

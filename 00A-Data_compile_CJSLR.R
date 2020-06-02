@@ -15,6 +15,8 @@ dat.banding <- read.csv("Banding_data_plus.csv", header = T, stringsAsFactors = 
 dat.locations <- read.csv("wintersurvival_accessDBs/ExportedTables/Locaciones_Todos_all_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(DOY = fecha %>% mdy %>% yday)
+dat.locations$estatus[which(dat.locations$anillo == 262112507 & dat.locations$fecha == "12/31/2013")] <- "M" # Correct error found later
+dat.locations$survive[which(dat.locations$anillo == 262112507 & dat.locations$fecha == "12/31/2013")] <- 0 # Correct error found later
 dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forImport.csv", stringsAsFactors = F) %>%
   tbl_df() %>%
   mutate(fecha_recup = ifelse(fecha_recup == "8/8/8888", "9999", fecha_recup)) %>%
