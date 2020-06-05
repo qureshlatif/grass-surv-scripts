@@ -13,9 +13,9 @@ scripts.loc <- "grass-surv-scripts/"
 ###################
 
 spp <- "BAIS" # BAIS or GRSP
-mod.nam <- "BigCheese"
+mod.nam <- "ShrubSpp"
 mod <- loadObject(str_c("mod_mcmcR_", mod.nam, "_", spp))
-vars.to.plot <- c("temp.prec7", "hierbas", "arbusto", "pastos", "Mean_Shrub_Height_5m",
+vars.to.plot <- c("temp.prec7", "arbusto", "pastos", "Juniper_5m", "Yucca_5m",
                   "Mean_Shrub_Height_5m_CV", "Mean_Shrub_Height_50m_CV",
                   "prey", "LOSH")
 vars.quad <- c(F, T, T, T, T,
@@ -73,16 +73,6 @@ p.temp.prec7.PSR <- ggplot(dat.plot.temp.prec7, aes(x = x, y = PSR.md)) +
   ylim(0, 1) +
   xlab("Temp prior 7 days (deg C)") + ylab(NULL)
 
-p.hierbas.DSR <- ggplot(dat.plot.hierbas, aes(x = x, y = DSR.md)) +
-  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  xlab("Forb cover (%)") + ylab(NULL)
-p.hierbas.PSR <- ggplot(dat.plot.hierbas, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("Forb cover (%)") + ylab(NULL)
-
 p.arbusto.DSR <- ggplot(dat.plot.arbusto, aes(x = x, y = DSR.md)) +
   geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
   geom_line(size = 1) +
@@ -103,15 +93,25 @@ p.pastos.PSR <- ggplot(dat.plot.pastos, aes(x = x, y = PSR.md)) +
   ylim(0, 1) +
   xlab("Grass cover (%)") + ylab(NULL)
 
-p.Mean_Shrub_Height_5m.DSR <- ggplot(dat.plot.Mean_Shrub_Height_5m, aes(x = x, y = DSR.md)) +
+p.Juniper_5m.DSR <- ggplot(dat.plot.Juniper_5m, aes(x = x, y = DSR.md)) +
   geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
   geom_line(size = 1) +
-  xlab("Shrub height (m, drone 5m)") + ylab(NULL)
-p.Mean_Shrub_Height_5m.PSR <- ggplot(dat.plot.Mean_Shrub_Height_5m, aes(x = x, y = PSR.md)) +
+  xlab("Juniper cover (%, drone 5m)") + ylab(NULL)
+p.Juniper_5m.PSR <- ggplot(dat.plot.Juniper_5m, aes(x = x, y = PSR.md)) +
   geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
   geom_line(size = 1) +
   ylim(0, 1) +
-  xlab("Shrub height (m, drone 5m)") + ylab(NULL)
+  xlab("Juniper cover (%, drone 5m)") + ylab(NULL)
+
+p.Yucca_5m.DSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = DSR.md)) +
+  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
+  geom_line(size = 1) +
+  xlab("Yucca cover (%, drone 5m)") + ylab(NULL)
+p.Yucca_5m.PSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
+  geom_line(size = 1) +
+  ylim(0, 1) +
+  xlab("Yucca cover (%, drone 5m)") + ylab(NULL)
 
 p.Mean_Shrub_Height_5m_CV.DSR <- ggplot(dat.plot.Mean_Shrub_Height_5m_CV, aes(x = x, y = DSR.md)) +
   geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
@@ -155,31 +155,31 @@ p.LOSH.PSR <- ggplot(dat.plot.LOSH, aes(x = x, y = PSR.md)) +
 
 p <- ggdraw() +
   draw_plot(p.temp.prec7.DSR,               x = 0.0500000, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.hierbas.DSR,                  x = 0.3666667, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.arbusto.DSR,                  x = 0.6833333, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.pastos.DSR,                   x = 0.0500000, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.Mean_Shrub_Height_5m.DSR,     x = 0.3666667, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.arbusto.DSR,                  x = 0.3666667, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.pastos.DSR,                   x = 0.6833333, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.Juniper_5m.DSR,               x = 0.0500000, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.Yucca_5m.DSR,                 x = 0.3666667, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
   draw_plot(p.Mean_Shrub_Height_5m_CV.DSR,  x = 0.6833333, y = 0.3333333, width = 0.3066667, height = 0.3333333) +
   draw_plot(p.Mean_Shrub_Height_50m_CV.DSR, x = 0.0500000, y = 0,         width = 0.3166667, height = 0.3333333) +
   draw_plot(p.prey.DSR,                     x = 0.3666667, y = 0,         width = 0.3166667, height = 0.3333333) +
   draw_plot(p.LOSH.DSR,                     x = 0.6833333, y = 0,         width = 0.3066667, height = 0.3333333) +
   draw_plot_label("Daily survival probability (BAIS)", x = 0, y = 0.15, angle = 90)
 
-save_plot("Figure_DSR_BigCheese_BAIS.tiff", p, ncol = 2, nrow = 2, dpi = 200)
+save_plot(str_c("Figure_DSR_", mod.nam, "_BAIS.tiff"), p, ncol = 2, nrow = 2, dpi = 200)
 
 p <- ggdraw() +
   draw_plot(p.temp.prec7.PSR,               x = 0.0500000, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.hierbas.PSR,                  x = 0.3666667, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.arbusto.PSR,                  x = 0.6833333, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.pastos.PSR,                   x = 0.0500000, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
-  draw_plot(p.Mean_Shrub_Height_5m.PSR,     x = 0.3666667, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.arbusto.PSR,                  x = 0.3666667, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.pastos.PSR,                   x = 0.6833333, y = 0.6666667, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.Juniper_5m.PSR,               x = 0.0500000, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
+  draw_plot(p.Yucca_5m.PSR,                 x = 0.3666667, y = 0.3333333, width = 0.3166667, height = 0.3333333) +
   draw_plot(p.Mean_Shrub_Height_5m_CV.PSR,  x = 0.6833333, y = 0.3333333, width = 0.3066667, height = 0.3333333) +
   draw_plot(p.Mean_Shrub_Height_50m_CV.PSR, x = 0.0500000, y = 0,         width = 0.3166667, height = 0.3333333) +
   draw_plot(p.prey.PSR,                     x = 0.3666667, y = 0,         width = 0.3166667, height = 0.3333333) +
   draw_plot(p.LOSH.PSR,                     x = 0.6833333, y = 0,         width = 0.3066667, height = 0.3333333) +
   draw_plot_label("Seasonal survival probability (BAIS)", x = 0, y = 0.1, angle = 90)
 
-save_plot("Figure_PSR_BigCheese_BAIS.tiff", p, ncol = 2, nrow = 2, dpi = 200)
+save_plot(str_c("Figure_PSR_", mod.nam, "_BAIS.tiff"), p, ncol = 2, nrow = 2, dpi = 200)
 
 #__________________________________________#
 
@@ -188,11 +188,11 @@ save_plot("Figure_PSR_BigCheese_BAIS.tiff", p, ncol = 2, nrow = 2, dpi = 200)
 #######################
 
 spp <- "GRSP" # BAIS or GRSP
-mod.nam <- "BigCheese"
+mod.nam <- "ShrubSpp"
 mod <- loadObject(str_c("mod_mcmcR_", mod.nam, "_", spp))
-vars.to.plot <- c("Shrub_All_5m", "otra", "Mean_Shrub_Height_5m", "hierbas_cv",
+vars.to.plot <- c("Yucca_5m", "otra", "hierbas_cv",
                   "Mean_Shrub_Height_50m_CV", "prey")
-vars.quad <- c(T, T, T, F,
+vars.quad <- c(T, T, F,
                F, F)
 
 source(str_c(scripts.loc, "Data_processing_", mod.nam,".R"))
@@ -256,25 +256,15 @@ p.hierbas_cv.PSR <- ggplot(dat.plot.hierbas_cv, aes(x = x, y = PSR.md)) +
   ylim(0, 1) +
   xlab("CV Forb cover") + ylab(NULL)
 
-p.Shrub_All_5m.DSR <- ggplot(dat.plot.Shrub_All_5m, aes(x = x, y = DSR.md)) +
+p.Yucca_5m.DSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = DSR.md)) +
   geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
   geom_line(size = 1) +
-  xlab("Shrub cover (%; drone 5m)") + ylab(NULL)
-p.Shrub_All_5m.PSR <- ggplot(dat.plot.Shrub_All_5m, aes(x = x, y = PSR.md)) +
+  xlab("Yucca cover (%; drone 5m)") + ylab(NULL)
+p.Yucca_5m.PSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = PSR.md)) +
   geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
   geom_line(size = 1) +
   ylim(0, 1) +
-  xlab("Shrub cover (%; drone 5m)") + ylab(NULL)
-
-p.Mean_Shrub_Height_5m.DSR <- ggplot(dat.plot.Mean_Shrub_Height_5m, aes(x = x, y = DSR.md)) +
-  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  xlab("Shrub height (m; drone 5m)") + ylab(NULL)
-p.Mean_Shrub_Height_5m.PSR <- ggplot(dat.plot.Mean_Shrub_Height_5m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("Shrub height (m; drone 5m)") + ylab(NULL)
+  xlab("Yucca cover (%; drone 5m)") + ylab(NULL)
 
 p.Mean_Shrub_Height_50m_CV.DSR <- ggplot(dat.plot.Mean_Shrub_Height_50m_CV, aes(x = x, y = DSR.md)) +
   geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
@@ -299,23 +289,21 @@ p.prey.PSR <- ggplot(dat.plot.prey, aes(x = x, y = PSR.md)) +
 p <- ggdraw() +
   draw_plot(p.otra.DSR,                     x = 0.0500000, y = 0.5, width = 0.3166667, height = 0.5) +
   draw_plot(p.hierbas_cv.DSR,               x = 0.3666667, y = 0.5, width = 0.3166667, height = 0.5) +
-  draw_plot(p.Shrub_All_5m.DSR,             x = 0.6833333, y = 0.5, width = 0.3066667, height = 0.5) +
-  draw_plot(p.Mean_Shrub_Height_5m.DSR,     x = 0.0500000, y = 0,   width = 0.3166667, height = 0.5) +
-  draw_plot(p.Mean_Shrub_Height_50m_CV.DSR, x = 0.3666667, y = 0,   width = 0.3166667, height = 0.5) +
-  draw_plot(p.prey.DSR,                     x = 0.6833333, y = 0,   width = 0.3066667, height = 0.5) +
+  draw_plot(p.Yucca_5m.DSR,                 x = 0.6833333, y = 0.5, width = 0.3066667, height = 0.5) +
+  draw_plot(p.Mean_Shrub_Height_50m_CV.DSR, x = 0.0500000, y = 0,   width = 0.3166667, height = 0.5) +
+  draw_plot(p.prey.DSR,                     x = 0.3666667, y = 0,   width = 0.3166667, height = 0.5) +
   draw_plot_label("Daily survival probability (GRSP)", x = 0, y = 0, angle = 90)
 
-save_plot("Figure_DSR_BigCheese_GRSP.tiff", p, ncol = 2, nrow = 1.5, dpi = 200)
+save_plot(str_c("Figure_DSR_",mod.nam,"_GRSP.tiff"), p, ncol = 2, nrow = 1.5, dpi = 200)
 
 p <- ggdraw() +
   draw_plot(p.otra.PSR,                     x = 0.0500000, y = 0.5, width = 0.3166667, height = 0.5) +
   draw_plot(p.hierbas_cv.PSR,               x = 0.3666667, y = 0.5, width = 0.3166667, height = 0.5) +
-  draw_plot(p.Shrub_All_5m.PSR,             x = 0.6833333, y = 0.5, width = 0.3066667, height = 0.5) +
-  draw_plot(p.Mean_Shrub_Height_5m.PSR,     x = 0.0500000, y = 0,   width = 0.3166667, height = 0.5) +
-  draw_plot(p.Mean_Shrub_Height_50m_CV.PSR, x = 0.3666667, y = 0,   width = 0.3166667, height = 0.5) +
-  draw_plot(p.prey.PSR,                     x = 0.6833333, y = 0,   width = 0.3066667, height = 0.5) +
+  draw_plot(p.Yucca_5m.PSR,                 x = 0.6833333, y = 0.5, width = 0.3066667, height = 0.5) +
+  draw_plot(p.Mean_Shrub_Height_50m_CV.PSR, x = 0.0500000, y = 0,   width = 0.3166667, height = 0.5) +
+  draw_plot(p.prey.PSR,                     x = 0.3666667, y = 0,   width = 0.3166667, height = 0.5) +
   draw_plot_label("Seasonal survival probability (GRSP)", x = 0, y = 0.2, angle = 90, hjust = 0)
 
-save_plot("Figure_PSR_BigCheese_GRSP.tiff", p, ncol = 2, nrow = 1.5, dpi = 200)
+save_plot(str_c("Figure_PSR_",mod.nam,"_GRSP.tiff"), p, ncol = 2, nrow = 1.5, dpi = 200)
 
 #__________________________________________#

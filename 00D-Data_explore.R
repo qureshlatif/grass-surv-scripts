@@ -159,17 +159,17 @@ write.csv(out, "Percent_days_veg_measured_GRSP.csv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 
-spp <- "GRSP" # BAIS or GRSP
-mod.nam <- "BigCheese_prelim"
+spp <- "BAIS" # BAIS or GRSP
+mod.nam <- "ShrubSpp"
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
 
 X.mat <- matrix(X, prod(dim(X)[1:2]), dim(X)[3])
 dimnames(X.mat)[[2]] <- X.nams
 X.mat[,-1] %>% cor(use = "complete") %>%
-  write.csv(str_c("Correlations_pre-analysis_", spp, ".csv"))
+  write.csv(str_c("Correlations_pre-analysis_", mod.nam, "_", spp, ".csv"))
 #write.csv("Correlations_veg_BAIS_fillData.csv")
 
-pdf(str_c("Correlations_pre-analysis_", spp, ".pdf"))
+pdf(str_c("Correlations_pre-analysis_", mod.nam, "_", spp, ".pdf"))
 #pdf("Correlations_veg_BAIS_fillData.pdf")
 X.mat[,-1] %>% cor(use = "complete") %>%
   corrplot(method = "ellipse", addCoefasPercent = T, diag = F, tl.cex = 0.5)

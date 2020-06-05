@@ -4,7 +4,7 @@ library(R.utils)
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
 load("Data_compiled_MissingCovsImputed.RData")
-mod.nam <- "BigCheese"
+mod.nam <- "ShrubSpp"
 mod.BAIS <- loadObject(str_c("mod_mcmcR_", mod.nam, "_BAIS"))
 mod.GRSP <- loadObject(str_c("mod_mcmcR_", mod.nam, "_GRSP"))
 
