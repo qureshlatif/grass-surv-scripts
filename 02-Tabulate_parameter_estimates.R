@@ -15,8 +15,8 @@ out <- matrix(NA, nrow = length(rows), ncol = length(cols),
 
 sum.fn <- function(x) {
   md <- median(x)
-  lo <- quantile(x, prob = 0.025, type = 8)
-  hi <- quantile(x, prob = 0.975, type = 8)
+  lo <- quantile(x, prob = 0.05, type = 8)
+  hi <- quantile(x, prob = 0.95, type = 8)
   x.sum <- ifelse(lo > 0 | hi < 0,
                   str_c(round(md, digits = 2),
                         " (",

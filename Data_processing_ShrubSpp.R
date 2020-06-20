@@ -42,7 +42,7 @@ temp.prec7[which(is.na(temp.prec7))] <- 0
 X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
 
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(arbusto, pastos, salsola, otra,
+  select(pastos, salsola, otra, #arbusto,
          Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m,
          Mesquite_5m, Distance_to_Fence)
 X.add <- Veg %>%

@@ -135,7 +135,7 @@ source(str_c(scripts.loc, "CJSRL.hmm.adapt.mcmc.R"))
 n.mcmc=200000
 rm(.Random.seed, envir=.GlobalEnv)
 #s.reg.opt <- 0.0811578947368421 # For BAIS
-#s.reg.opt <- 0.0498947368421053 # For GRSP, Big Cheese model
+#s.reg.opt <- 0.0811578947368421 # For GRSP, Big Cheese model
 #s.reg.opt <- 0.06552632 # For GRSP, ShrubSpp model
 
 tic()

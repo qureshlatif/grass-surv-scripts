@@ -10,13 +10,15 @@ nSeason <- max(SeasonInd)
 SiteInd <- data.spp$Covs$SiteInd
 nSite <- max(SiteInd)
 
-# Covariates #
+## Covariates ##
+# Date #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
 X.mn <- c(DOS = mean(DOS[which(!is.na(ymat))]))
 X.sd <- c(DOS = sd(DOS[which(!is.na(ymat))]))
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
 DOS2 <- DOS^2
 
+# Temperature #
 temp.min <- temp.prec7 <- array(NA, dim = dim(DOS))
 for(i in 1:nBird) {
   ind <- dat.temp %>%
@@ -41,8 +43,9 @@ temp.prec7[which(is.na(temp.prec7))] <- 0
 
 X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
 
+# Vegetation #
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(hierbas, arbusto, pastos, salsola, otra, #pasto_ht, 
+  select(hierbas, pastos, salsola, otra, #pasto_ht, arbusto,
          Shrub_All_5m, Mean_Shrub_Height_5m, Distance_to_Fence)
 X.add <- Veg %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
@@ -79,6 +82,7 @@ VegCV.z <- VegCV.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
+# Individual #
 Ind <- data.spp$Covs %>% ungroup() %>%
   select(peso, female, adult)
 X.add <- Ind %>%
@@ -102,6 +106,7 @@ Ind.z <- Ind.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
+# Site #
 Site <- data.spp$Covs %>%
   select(prey, LOSH) # , raptor, NDVI
 X.add <- Site %>%
@@ -124,5 +129,21 @@ Y <- ymat
 
 n=dim(Y)[1]
 J=dim(Y)[2]
+
+# # Add interactions #
+# X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 9)))
+# X.nams <- c(X.nams, "pesoXtemp.min", "pesoXtemp.p7", "pastosXtemp.min", "pastosXtemp.p7",
+#             "pasto_ht_cvXtemp.min", "pasto_ht_cvXtemp.p7", "Shrub_All_5mXtemp.min",
+#             "Shrub_All_5mXtemp.p7", "Mean_Shrub_Height_5mXLOSH")
+# dimnames(X)[[3]] <- X.nams
+# X[,,"pesoXtemp.min"] <- X[,,"peso"]*X[,,"temp.min"]
+# X[,,"pesoXtemp.p7"] <- X[,,"peso"]*X[,,"temp.prec7"]
+# X[,,"pastosXtemp.min"] <- X[,,"pastos"]*X[,,"temp.min"]
+# X[,,"pastosXtemp.p7"] <- X[,,"pastos"]*X[,,"temp.prec7"]
+# X[,,"pasto_ht_cvXtemp.min"] <- X[,,"pasto_ht_cv"]*X[,,"temp.min"]
+# X[,,"pasto_ht_cvXtemp.p7"] <- X[,,"pasto_ht_cv"]*X[,,"temp.prec7"]
+# X[,,"Shrub_All_5mXtemp.min"] <- X[,,"Shrub_All_5m"]*X[,,"temp.min"]
+# X[,,"Shrub_All_5mXtemp.p7"] <- X[,,"Shrub_All_5m"]*X[,,"temp.prec7"]
+# X[,,"Mean_Shrub_Height_5mXLOSH"] <- X[,,"Mean_Shrub_Height_5m"]*X[,,"LOSH"]
 
 rm(i, DOS, DOS2, temp.min, temp.prec7, Veg, Veg.z, Veg2.z, VegCV, VegCV.z, Ind, Ind.z, X.add, Site, Site.z)
