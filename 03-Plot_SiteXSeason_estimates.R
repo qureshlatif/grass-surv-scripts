@@ -5,13 +5,47 @@ library(QSLpersonal)
 theme_set(theme_cowplot())
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 
 ###################
 # Baird's Sparrow #
 ###################
 
-load("Big_cheese_BAIS_cache.RData")
+spp <- "BAIS" # BAIS or GRSP
+mod.nam <- "BigCheese"
+mod <- loadObject(str_c("mod_mcmcR_", mod.nam, "_", spp))
+source(str_c(scripts.loc, "Data_processing_", mod.nam,".R"))
+dimnames(X)[[3]] <- X.nams
+
+nsims <- dim(mod$sims.concat)[2]
+nsims.samp <- sample(nsims, 5000)
+Site_Season <- str_c(data.BAIS$Covs$Site, data.BAIS$Covs$Season, sep = "_")
+X.sum <- X %>% apply(c(2, 3), function(x) tapply(x, Site_Season, mean))
+X.sum <- X.sum %>% array(dim = c(dim(X.sum), length(nsims.samp))) %>% aperm(c(4, 1:3))
+B <- mod$sims.concat[1:30,nsims.samp] %>% array(dim = dim(X.sum)[c(4, 1, 2, 3)]) %>% aperm(c(2, 3, 4, 1))
+DSR <- expit(apply(B * X.sum, c(1, 2, 3), sum))
+
+st <- 1:(J-89)
+end <- 90:J
+PSR <- apply(DSR, c(1, 2), function(x) {
+  v <- numeric(length = length(st))
+  for(j in 1:length(st)) v[j] <- prod(x[st[j]:end[j]])
+  return(mean(v))
+})
+dat.plot <- SiteSeasons %>%
+  mutate(PSR.md = apply(PSR, 2, median),
+         PSR.lo = apply(PSR, 2, function(x) quantile(x, prob = 0.05)),
+         PSR.hi = apply(PSR, 2, function(x) quantile(x, prob = 0.95)),
+         Site = as.factor(factor(Site)),
+         Season = as.factor(Season))
+
+p <- ggplot(dat.plot, aes(x = Season, y = PSR.md, fill = Site, shape = Site)) +
+  geom_errorbar(aes(ymin = PSR.lo, ymax = PSR.hi), width = 0.1, position = position_dodge(0.4)) +
+  geom_point(size = 2.5, position = position_dodge(0.4)) +
+  scale_shape_manual(values = c(21, 22, 23, 24)) +
+  ylab("Survival over 90 days")
+  
 
 # Plots for time-varying covariates #
 p.temp.prec7.DSR <- ggplot(dat.plot.temp.prec7, aes(x = x, y = DSR.md)) +

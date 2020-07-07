@@ -4,11 +4,11 @@ library(R.utils)
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
 load("Data_compiled_MissingCovsImputed.RData")
-mod.nam <- "ShrubSpp"
+mod.nam <- "2018"
 mod.BAIS <- loadObject(str_c("mod_mcmcR_", mod.nam, "_BAIS"))
 mod.GRSP <- loadObject(str_c("mod_mcmcR_", mod.nam, "_GRSP"))
 
-rows <- dimnames(mod.BAIS$sims.concat)[[1]]
+rows <- unique(c(dimnames(mod.BAIS$sims.concat)[[1]], dimnames(mod.GRSP$sims.concat)[[1]]))
 cols <- c("BAIS", "GRSP")
 out <- matrix(NA, nrow = length(rows), ncol = length(cols),
               dimnames = list(rows, cols))
