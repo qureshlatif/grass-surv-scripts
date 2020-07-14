@@ -7,8 +7,8 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
-spp <- "BAIS" # BAIS or GRSP
-model.file <- "grass-surv-scripts/model_CJSRLHomog_Dot.jags"
+spp <- "GRSP" # BAIS or GRSP
+model.file <- "grass-surv-scripts/model_CJSRL_SiteXSeason.jags"
 
 # MCMC values
 nc <- 3 # number of chains
@@ -16,7 +16,7 @@ nb <- 1000 # burn in
 ni <- 6000 # number of iterations
 nt <- 10 # thinning
 
-save.out <- str_c("mod_CJSRLHomog_Dot_", spp)
+save.out <- str_c("mod_CJSRL_SiteXSeason_", spp)
 #______________________________#
 
 # Data objects to send to JAGS
@@ -26,7 +26,7 @@ data.nams <- c("Y.alive", "Y.dead", "first", "last",
                "DOSdepl", "time_since_depl", "after_depl")
 
 # Stuff to save from JAGS
-parameters <- c("B0", "B", "p", "psi")
+parameters <- c("B0.mean", "B0.sd", "B0", "B", "p", "psi")
 
 # Detection data #
 data.spp <- str_c("data.", spp) %>% as.name %>% eval
@@ -145,7 +145,9 @@ peso.z <- peso.x %>%
   (function(x) ifelse(is.na(x), mean(x, na.rm = T), x)) %>%
   array(., c(length(.), nDOS))
 
-X <- abind::abind(DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
+#X <- abind::abind(DOS, DOS2, drone.z, drone2.z, droneCV.z, peso.z, along = 3)
+X <- drone.z[,,1:2]
+X[,,] <- rnorm(length(X), 0, 1) # For some reason, the model needs covariates to run, so adding garbage covariates to avoid invalid parent error. Very strange behavior!!
 ncovs <- dim(X)[3]
 Y.alive <- (ymat == 1)*1
 Y.dead <- (ymat == 2)*1
@@ -158,7 +160,7 @@ for(i in 1:length(first)) {
 
 # Function for setting initial values in JAGS
 inits <- function()
-  list(z = z.init, B0 = rnorm(1, 4.8, 1), B = rep(0,ncovs), p = 0.9, psi = 0.5)
+  list(z = z.init, B0 = matrix(rnorm(nSite*nSeason, 4.8, 1), nSite, nSeason), B = rep(0,ncovs), p = 0.9, psi = 0.5) #B0 = rnorm(1, 4.8, 1)
 
 # Fit model
 data <- list()

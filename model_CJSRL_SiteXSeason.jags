@@ -1,4 +1,3 @@
-# Note: This version of the model requires chopping off the first column of z with no data.
 model {
 
 #Priors
@@ -7,21 +6,29 @@ B0.sd ~ dunif(0, 5)
 for(s in 1:nSite) {
   for(t in 1:nSeason) {
     B0[s, t] ~ dnorm(B0.mean, pow(B0.sd, -2))
-    logit(S[s, t]) <- B0[s, t]
   }
 }
-
 psi ~ dunif(0, 1)
 p ~ dunif(0, 1)
 
+for(b in 1:ncovs) {
+  B[b] ~ dnorm(0, 10) # Default (no regularization) should be 0.6666667
+}
+
 for(i in 1:nBird) {
-  z[i, first[i]] ~ dbern(S[SiteInd[i], SeasonInd[i]])
-  for(j in (first[i] + 1):last[i]) {
-    z[i, j] ~ dbern(S[SiteInd[i], SeasonInd[i]]*z[i, (j - 1)])
+  for(j in 1:nDOS) {
+    logit(S[i, j]) <- B0[SiteInd[i], SeasonInd[i]] + sum(BX[i, j, ])
+    for(b in 1:ncovs) {
+      BX[i, j, b] <- B[b] * X[i, j, b]
+      }
+    }
+  z[i, (first[i] + 1)] ~ dbern(S[i, (first[i] + 1)])
+  for(j in (first[i] + 2):last[i]) {
+    z[i, j] ~ dbern(S[i, j]*z[i, (j - 1)])
     }
   for(j in (first[i] + 1):last[i]) {
-    Y.alive[i, j] ~ dbern(p * z[i, (j - 1)])
-    Y.dead[i, j] ~ dbern(psi * (1 - z[i, (j - 1)]))
+    Y.alive[i, j] ~ dbern(p * z[i, j])
+    Y.dead[i, j] ~ dbern(psi * (1 - z[i, j]))
     }
   }
 }
