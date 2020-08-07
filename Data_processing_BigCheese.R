@@ -45,8 +45,8 @@ X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
 
 # Vegetation #
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(hierbas, pastos, salsola, otra, #pasto_ht, arbusto,
-         Shrub_All_5m, Mean_Shrub_Height_5m, Distance_to_Fence)
+  select(hierbas, pastos, salsola, otra, #arbusto,
+         Shrub_All_5m, Max_Shrub_Height_5m, Distance_to_Fence)
 X.add <- Veg %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(Veg)
@@ -65,8 +65,8 @@ Veg.z <- Veg.z %>% data.matrix() %>%
 Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
 
 VegCV <- data.spp$Covs %>%
-  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_50m_CV, Shrub_All_500m_CV,
-         Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV)
+  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV)
 X.add <- VegCV %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(VegCV)
@@ -75,7 +75,7 @@ X.add <- VegCV %>%
   summarise_all(function(x) sd(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(VegCV)
 X.sd <- c(X.sd, X.add)
-VegCV.z <- VegCV %>% # , Mean_Shrub_Height_500m_CV
+VegCV.z <- VegCV %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
 X.nams <- c(X.nams, names(VegCV.z))
 VegCV.z <- VegCV.z %>% data.matrix() %>%
@@ -129,6 +129,12 @@ Y <- ymat
 
 n=dim(Y)[1]
 J=dim(Y)[2]
+
+# Add interactions #
+X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 1)))
+X.nams <- c(X.nams, "Max_Shrub_Height_5mXShrub_All_5m")
+dimnames(X)[[3]] <- X.nams
+X[,,"Max_Shrub_Height_5mXShrub_All_5m"] <- X[,,"Max_Shrub_Height_5m"]*X[,,"Shrub_All_5m"]
 
 # # Add interactions #
 # X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 9)))

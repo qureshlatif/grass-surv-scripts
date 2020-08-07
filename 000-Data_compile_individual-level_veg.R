@@ -45,196 +45,146 @@ dat.locations <- dat.locations %>%
                      pastos, pasto_ht, salsola, salsola_ht, otra, otra1, desnudo),
             by = c("Site", "Season", "waypoint"))
 
-# 2. Join grid veg to location records where present and within 'maxD.grid.join'.
-Site_Season_combos <- dat.locations %>% select(Site, Season) %>% distinct
-for(i in 1:nrow(Site_Season_combos)) {
-  locs <- dat.locations %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
-  veg <- dat.veg.grid %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
-  names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
-                                     "pastos", "pasto_ht", "salsola", "salsola_ht",
-                                     "otra", "otra1", "desnudo"))] <-
-    str_c(names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
-                                       "pastos", "pasto_ht", "salsola", "salsola_ht",
-                                       "otra", "otra1", "desnudo"))], "_grid")
-  if(nrow(veg) > 0) {
-    D <- distm(locs[, c("Longitude", "Latitude")], veg[, c("Longitude", "Latitude")])
-    minD <- apply(D, 1, min)
-    minD.ind <- apply(D, 1, function(x) which(x == min(x)))
-    veg.keep <- veg %>% slice(minD.ind) %>%
-      mutate_at(vars(names(veg)[7:length(names(veg))]), (function(x) replace(x, which(minD > maxD.grid.join), NA))) %>%
-      mutate(Distance = minD)
-    locs <- locs %>% bind_cols(
-      veg.keep %>% select(hierbas_grid:Distance)
-    )
-  }
-  if(i == 1) dat.locs <- locs
-  if(i > 1) dat.locs <- dat.locs %>%
-    bind_rows(locs)
-}
-dat.locations <- dat.locs
-rm(dat.locs, locs, veg, D, minD, minD.ind, veg.keep, i, Site_Season_combos)
+# # 2. Join grid veg to location records where present and within 'maxD.grid.join'.
+# Site_Season_combos <- dat.locations %>% select(Site, Season) %>% distinct
+# for(i in 1:nrow(Site_Season_combos)) {
+#   locs <- dat.locations %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
+#   veg <- dat.veg.grid %>% filter(Site == Site_Season_combos$Site[i] & Season == Site_Season_combos$Season[i])
+#   names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
+#                                      "pastos", "pasto_ht", "salsola", "salsola_ht",
+#                                      "otra", "otra1", "desnudo"))] <-
+#     str_c(names(veg)[which(names(veg) %in% c("hierbas", "hierba_ht", "arbusto", "arbusto_ht",
+#                                        "pastos", "pasto_ht", "salsola", "salsola_ht",
+#                                        "otra", "otra1", "desnudo"))], "_grid")
+#   if(nrow(veg) > 0) {
+#     D <- distm(locs[, c("Longitude", "Latitude")], veg[, c("Longitude", "Latitude")])
+#     minD <- apply(D, 1, min)
+#     minD.ind <- apply(D, 1, function(x) which(x == min(x)))
+#     veg.keep <- veg %>% slice(minD.ind) %>%
+#       mutate_at(vars(names(veg)[7:length(names(veg))]), (function(x) replace(x, which(minD > maxD.grid.join), NA))) %>%
+#       mutate(Distance = minD)
+#     locs <- locs %>% bind_cols(
+#       veg.keep %>% select(hierbas_grid:Distance)
+#     )
+#   }
+#   if(i == 1) dat.locs <- locs
+#   if(i > 1) dat.locs <- dat.locs %>%
+#     bind_rows(locs)
+# }
+# dat.locations <- dat.locs
+# rm(dat.locs, locs, veg, D, minD, minD.ind, veg.keep, i, Site_Season_combos)
 
-# 3. Summarize (mean, SD?) bird- and grid-based versions of covariates.
+# 3. Summarize (mean, SD) bird- and grid-based versions of covariates.
 dat.indveg <- dat.locations %>%
   group_by(Site, Season, anillo) %>%
-  mutate(otra1 = fct_infreq(otra1),
-         otra1_grid = fct_infreq(otra1_grid)) %>%
+  mutate(otra1 = fct_infreq(otra1)) %>%
   summarise(hierbas = mean(hierbas, na.rm = T),
-            hierba_ht = mean(hierba_ht, na.rm = T),
-            arbusto = mean(arbusto, na.rm = T),
-            arbusto_ht = mean(arbusto_ht, na.rm = T),
             pastos = mean(pastos, na.rm = T),
-            pasto_ht = mean(pasto_ht, na.rm = T),
             salsola = mean(salsola, na.rm = T),
-            salsola_ht = mean(salsola_ht, na.rm = T),
             otra = mean(otra, na.rm = T),
             otra1 = first(otra1),
-            desnudo = mean(desnudo, na.rm = T),
-            hierbas_grid = mean(hierbas_grid, na.rm = T),
-            hierba_ht_grid = mean(hierba_ht_grid, na.rm = T),
-            arbusto_grid = mean(arbusto_grid, na.rm = T),
-            arbusto_ht_grid = mean(arbusto_ht_grid, na.rm = T),
-            pastos_grid = mean(pastos_grid, na.rm = T),
-            pasto_ht_grid = mean(pasto_ht_grid, na.rm = T),
-            salsola_grid = mean(salsola_grid, na.rm = T),
-            salsola_ht_grid = mean(salsola_ht_grid, na.rm = T),
-            otra_grid = mean(otra_grid, na.rm = T),
-            otra1_grid = first(otra1_grid),
-            desnudo_grid = mean(desnudo_grid, na.rm = T)) %>%
+            desnudo = mean(desnudo, na.rm = T)) %>%
+  ungroup()
+
+dat.indveg <- dat.indveg %>% left_join(
+  dat.locations %>%
+  group_by(Site, Season, anillo) %>%
+  summarise(hierba_ht = ifelse(any(hierbas > 0, na.rm = T),
+                               sum(hierba_ht * hierbas, na.rm = T) / sum(hierbas, na.rm = T), NA),
+            pasto_ht = ifelse(any(pastos > 0, na.rm = T), sum(pasto_ht * pastos, na.rm = T) / sum(pastos, na.rm = T),
+                              NA)),
+  by = c("Site", "Season", "anillo"))
+
+dat.indveg <- dat.indveg %>%
   left_join(dat.locations %>%
               group_by(Site, Season, anillo) %>%
               summarise(hierbas_sd = sd(hierbas, na.rm = T),
-                        hierba_ht_sd = sd(hierba_ht, na.rm = T),
-                        arbusto_sd = sd(arbusto, na.rm = T),
-                        arbusto_ht_sd = sd(arbusto_ht, na.rm = T),
                         pastos_sd = sd(pastos, na.rm = T),
-                        pasto_ht_sd = sd(pasto_ht, na.rm = T),
                         salsola_sd = sd(salsola, na.rm = T),
-                        salsola_ht_sd = sd(salsola_ht, na.rm = T),
                         otra_sd = sd(otra, na.rm = T),
-                        desnudo_sd = sd(desnudo, na.rm = T),
-                        hierbas_sd_grid = sd(hierbas_grid, na.rm = T),
-                        hierba_ht_sd_grid = sd(hierba_ht_grid, na.rm = T),
-                        arbusto_sd_grid = sd(arbusto_grid, na.rm = T),
-                        arbusto_ht_sd_grid = sd(arbusto_ht_grid, na.rm = T),
-                        pastos_sd_grid = sd(pastos_grid, na.rm = T),
-                        pasto_ht_sd_grid = sd(pasto_ht_grid, na.rm = T),
-                        salsola_sd_grid = sd(salsola_grid, na.rm = T),
-                        salsola_ht_sd_grid = sd(salsola_ht_grid, na.rm = T),
-                        otra_sd_grid = sd(otra_grid, na.rm = T),
-                        desnudo_sd_grid = sd(desnudo_grid, na.rm = T)),
-            by = c("Site", "Season", "anillo")) %>%
+                        desnudo_sd = sd(desnudo, na.rm = T)),
+            by = c("Site", "Season", "anillo"))
+
+dat.indveg <- dat.indveg %>%
+  left_join(dat.locations %>%
+              group_by(Site, Season, anillo) %>%
+              summarise(hierba_ht_sd = ifelse(any(hierbas > 0, na.rm = T),
+                                              sqrt(sum(hierbas * (hierba_ht - mean(hierba_ht)) ^ 2, na.rm = T) /
+                                                     ((n() - 1) * sum(hierbas, na.rm = T)) /
+                                                     n()), NA),
+                        pasto_ht_sd = ifelse(any(pastos > 0, na.rm = T),
+                                             sqrt(sum(pastos * (pasto_ht - mean(pasto_ht)) ^ 2, na.rm = T) /
+                                                    ((n() - 1) * sum(pastos, na.rm = T)) /
+                                                    n()), NA)),
+            by = c("Site", "Season", "anillo"))
+
+dat.indveg <- dat.indveg %>%
   left_join(dat.locations %>%
               group_by(Site, Season, anillo) %>%
               summarise(hierbas_n = sum(!is.na(hierbas)),
-                        hierba_ht_n = sum(!is.na(hierba_ht)),
-                        arbusto_n = sum(!is.na(arbusto)),
-                        arbusto_ht_n = sum(!is.na(arbusto_ht)),
+                        hierba_ht_n = sum(hierbas > 0, na.rm = T),
                         pastos_n = sum(!is.na(pastos)),
-                        pasto_ht_n = sum(!is.na(pasto_ht)),
+                        pasto_ht_n = sum(pastos > 0, na.rm = T),
                         salsola_n = sum(!is.na(salsola)),
-                        salsola_ht_n = sum(!is.na(salsola_ht)),
                         otra_n = sum(!is.na(otra)),
                         otra1_n = length(unique(otra1)),
-                        desnudo_n = sum(!is.na(desnudo)),
-                        hierbas_grid_n = sum(!is.na(hierbas_grid)),
-                        hierba_ht_grid_n = sum(!is.na(hierba_ht_grid)),
-                        arbusto_grid_n = sum(!is.na(arbusto_grid)),
-                        arbusto_ht_grid_n = sum(!is.na(arbusto_ht_grid)),
-                        pastos_grid_n = sum(!is.na(pastos_grid)),
-                        pasto_ht_grid_n = sum(!is.na(pasto_ht_grid)),
-                        salsola_grid_n = sum(!is.na(salsola_grid)),
-                        salsola_ht_grid_n = sum(!is.na(salsola_ht_grid)),
-                        otra_grid_n = sum(!is.na(otra_grid)),
-                        otra1_grid_n = length(unique(otra1_grid)),
-                        desnudo_grid_n = sum(!is.na(desnudo_grid))),
+                        desnudo_n = sum(!is.na(desnudo))),
             by = c("Site", "Season", "anillo")) %>%
   ungroup %>%
-  mutate(hierbas_sd = hierbas_sd / hierbas,
-         hierba_ht_sd = hierba_ht_sd / hierba_ht,
-         arbusto_sd = arbusto_sd / arbusto,
-         arbusto_ht_sd = arbusto_ht_sd / arbusto_ht,
-         pastos_sd = pastos_sd / pastos,
-         pasto_ht_sd = pasto_ht_sd / pasto_ht,
-         salsola_sd = salsola_sd / salsola,
-         salsola_ht_sd = salsola_ht_sd / salsola_ht,
-         otra_sd = otra_sd / otra,
-         desnudo_sd = desnudo_sd / otra,
-         hierbas_sd_grid = hierbas_sd_grid / hierbas_grid,
-         hierba_ht_sd_grid = hierba_ht_sd_grid / hierba_ht_grid,
-         arbusto_sd_grid = arbusto_sd_grid / arbusto_grid,
-         arbusto_ht_sd_grid = arbusto_ht_sd_grid / arbusto_ht_grid,
-         pastos_sd_grid = pastos_sd_grid / pastos_grid,
-         pasto_ht_sd_grid = pasto_ht_sd_grid / pasto_ht_grid,
-         salsola_sd_grid = salsola_sd_grid / salsola_grid,
-         salsola_ht_sd_grid = salsola_ht_sd_grid / salsola_ht_grid,
-         otra_sd_grid = otra_sd_grid / otra_grid,
-         desnudo_sd_grid = desnudo_sd_grid / desnudo_grid) %>%
+  mutate(hierbas_sd = ifelse(hierbas > 0, hierbas_sd / hierbas, NA),
+         hierba_ht_sd = ifelse(hierba_ht > 0, hierba_ht_sd / hierba_ht, NA),
+         pastos_sd = ifelse(pastos > 0, pastos_sd / pastos, NA),
+         pasto_ht_sd = ifelse(pasto_ht > 0, pasto_ht_sd / pasto_ht, NA),
+         salsola_sd = ifelse(salsola, salsola_sd / salsola, NA),
+         otra_sd = ifelse(otra > 0, otra_sd / otra, NA),
+         desnudo_sd = ifelse(desnudo > 0, desnudo_sd / desnudo, NA)) %>%
   rename(hierbas_cv = hierbas_sd,
          hierba_ht_cv = hierba_ht_sd,
-         arbusto_cv = arbusto_sd,
-         arbusto_ht_cv = arbusto_ht_sd,
          pastos_cv = pastos_sd,
          pasto_ht_cv = pasto_ht_sd,
          salsola_cv = salsola_sd,
-         salsola_ht_cv = salsola_ht_sd,
          otra_cv = otra_sd,
-         desnudo_cv = desnudo_sd,
-         hierbas_cv_grid = hierbas_sd_grid,
-         hierba_ht_cv_grid = hierba_ht_sd_grid,
-         arbusto_cv_grid = arbusto_sd_grid,
-         arbusto_ht_cv_grid = arbusto_ht_sd_grid,
-         pastos_cv_grid = pastos_sd_grid,
-         pasto_ht_cv_grid = pasto_ht_sd_grid,
-         salsola_cv_grid = salsola_sd_grid,
-         salsola_ht_cv_grid = salsola_ht_sd_grid,
-         otra_cv_grid = otra_sd_grid,
-         desnudo_cv_grid = desnudo_sd_grid)
+         desnudo_cv = desnudo_sd)
 
-# 4. Calculate correlations between bird- and grid-based versions of covariates in years when both were present.
-vars <- c("hierbas", "hierba_ht", "arbusto", "arbusto_cv", "arbusto_ht", "pastos",
-          "pastos_cv", "pasto_ht", "pasto_ht_cv", "salsola", "salsola_ht", "otra", "desnudo")
-cols <- c("cor", "cor10")
-out_cor <- matrix(NA, nrow = length(vars), ncol = length(cols),
-                  dimnames = list(vars, cols))
-
-for(v in vars) {
-  out_cor[v, "cor"] <- cor(dat.indveg[, v], dat.indveg[, str_c(v, "_grid")], use = "complete")
-  ifelse(str_detect(v, "_cv"),
-         ind10 <- which(dat.indveg[, str_c(str_remove(v, "_cv"), "_grid_n")] >= 10 & dat.indveg[, str_c(str_remove(v, "_cv"), "_n")] >= 10),
-         ind10 <- which(dat.indveg[, str_c(v, "_grid_n")] >= 10 & dat.indveg[, str_c(v, "_n")] >= 10))
-  out_cor[v, "cor10"] <- cor(dat.indveg[ind10, v], dat.indveg[ind10, str_c(v, "_grid")], use = "complete")
-}
-write.csv(out_cor, "Correlations_BirdXGrid_veg.csv")
-
-# 5. Come up with correction factor for imputing bird-level values where only grid-level values are available.
-mod <- lm(pastos ~ pastos_grid, data = dat.indveg)
-n <- sum(!is.na(dat.indveg$pastos) & !is.na(dat.indveg$pastos_grid))
-dat.indveg <- dat.indveg %>%
-  mutate(pastos_pred = predict(mod, dat.indveg, se.fit = T)$fit,
-         pastos_predsd = predict(mod, dat.indveg, se.fit = T)$se.fit * sqrt(n))
-
-mod <- lm(desnudo ~ desnudo_grid, data = dat.indveg)
-n <- sum(!is.na(dat.indveg$desnudo) & !is.na(dat.indveg$desnudo_grid))
-dat.indveg <- dat.indveg %>%
-  mutate(desnudo_pred = predict(mod, dat.indveg, se.fit = T)$fit,
-         desnudo_predsd = predict(mod, dat.indveg, se.fit = T)$se.fit * sqrt(n))
+# # 4. Calculate correlations between bird- and grid-based versions of covariates in years when both were present.
+# vars <- c("hierbas", "hierba_ht", "arbusto", "arbusto_cv", "arbusto_ht", "pastos",
+#           "pastos_cv", "pasto_ht", "pasto_ht_cv", "salsola", "salsola_ht", "otra", "desnudo")
+# cols <- c("cor", "cor10")
+# out_cor <- matrix(NA, nrow = length(vars), ncol = length(cols),
+#                   dimnames = list(vars, cols))
+# 
+# for(v in vars) {
+#   out_cor[v, "cor"] <- cor(dat.indveg[, v], dat.indveg[, str_c(v, "_grid")], use = "complete")
+#   ifelse(str_detect(v, "_cv"),
+#          ind10 <- which(dat.indveg[, str_c(str_remove(v, "_cv"), "_grid_n")] >= 10 & dat.indveg[, str_c(str_remove(v, "_cv"), "_n")] >= 10),
+#          ind10 <- which(dat.indveg[, str_c(v, "_grid_n")] >= 10 & dat.indveg[, str_c(v, "_n")] >= 10))
+#   out_cor[v, "cor10"] <- cor(dat.indveg[ind10, v], dat.indveg[ind10, str_c(v, "_grid")], use = "complete")
+# }
+# write.csv(out_cor, "Correlations_BirdXGrid_veg.csv")
+# 
+# # 5. Come up with correction factor for imputing bird-level values where only grid-level values are available.
+# mod <- lm(pastos ~ pastos_grid, data = dat.indveg)
+# n <- sum(!is.na(dat.indveg$pastos) & !is.na(dat.indveg$pastos_grid))
+# dat.indveg <- dat.indveg %>%
+#   mutate(pastos_pred = predict(mod, dat.indveg, se.fit = T)$fit,
+#          pastos_predsd = predict(mod, dat.indveg, se.fit = T)$se.fit * sqrt(n))
+# 
+# mod <- lm(desnudo ~ desnudo_grid, data = dat.indveg)
+# n <- sum(!is.na(dat.indveg$desnudo) & !is.na(dat.indveg$desnudo_grid))
+# dat.indveg <- dat.indveg %>%
+#   mutate(desnudo_pred = predict(mod, dat.indveg, se.fit = T)$fit,
+#          desnudo_predsd = predict(mod, dat.indveg, se.fit = T)$se.fit * sqrt(n))
 
 # 6. Prune unneeded columns and save
 dat.indveg <- dat.indveg %>%
-  select(Site:desnudo, hierbas_cv:desnudo_cv,
-         hierbas_n:desnudo_n, pastos_pred:desnudo_predsd)
+  select(Site:hierbas, hierba_ht, pastos, pasto_ht, salsola:desnudo, hierbas_cv,
+         hierba_ht_cv, pastos_cv, pasto_ht_cv, salsola_cv:desnudo_cv,
+         hierbas_n:desnudo_n)#, pastos_pred:desnudo_predsd)
 trim <- (dat.indveg %>%
-  select(hierbas:otra, desnudo:desnudo_cv,
-         pastos_pred:desnudo_predsd) %>%
+  select(hierbas:otra, desnudo:desnudo_cv) %>% # pastos_pred:desnudo_predsd
   data.matrix %>%
   apply(1, function(x) sum(!is.na(x)))) > 0
 trim.ind <- which(trim)
 dat.indveg <- dat.indveg %>% slice(trim.ind)
-
-# Fix Inf value for desnudo_cv (not sure why this comes up)
-vals <- dat.locations %>% filter(Season == "2017-2018" & anillo == 272162804) %>% pull(desnudo)
-dat.indveg$desnudo_cv[which(dat.indveg$Season == "2017-2018" & dat.indveg$anillo == 272162804)] <-
-  sd(vals)/mean(vals)
 
 write.csv(dat.indveg, "Veg_individual.csv", row.names = F)

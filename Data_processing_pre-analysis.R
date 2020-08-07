@@ -13,7 +13,6 @@ nSite <- max(SiteInd)
 # Covariates #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
-DOS2 <- DOS^2
 
 temp.min <- temp.prec7 <- array(NA, dim = dim(DOS))
 for(i in 1:nBird) {
@@ -35,22 +34,22 @@ temp.min[which(is.na(temp.min))] <- 0
 temp.prec7 <- (temp.prec7 - mean(temp.prec7[which(!is.na(ymat))])) / sd(temp.prec7[which(!is.na(ymat))])
 temp.prec7[which(is.na(temp.prec7))] <- 0
 
-X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
+X.nams <- c("Intercept", "DOS", "temp.min", "temp.prec7")
 
 Veg.z <- data.spp$Covs %>% ungroup() %>%
-  select(hierbas, arbusto, pastos, pasto_ht, salsola, otra,
-         Shrub_All_5m, Mean_Shrub_Height_5m, Distance_to_Fence) %>%
+  select(hierbas:otra, desnudo, Mesquite_5m, Mesquite_50m, Mesquite_500m,
+         Juniper_5m, Juniper_50m, Juniper_500m, Yucca_5m, Yucca_50m, Yucca_500m,
+         Shrub_All_5m, Shrub_All_50m, Shrub_All_500m, Max_Shrub_Height_5m,
+         Max_Shrub_Height_50m, Max_Shrub_Height_500m, Distance_to_Fence) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
-X.nams <- c(X.nams, names(Veg.z), str_c(names(Veg.z)[-ncol(Veg.z)], "2"))
+X.nams <- c(X.nams, names(Veg.z))
 Veg.z <- Veg.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
-Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
-
 VegCV.z <- data.spp$Covs %>%
-  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_50m_CV, Shrub_All_500m_CV,
-         Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV) %>%
+  select(hierbas_cv:desnudo_cv, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_5m_CV, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))
 X.nams <- c(X.nams, names(VegCV.z))
 VegCV.z <- VegCV.z %>% data.matrix() %>%
@@ -79,8 +78,8 @@ Site.z <- Site.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
-X <- abind::abind(array(1, dim = dim(DOS)), DOS, DOS2, temp.min, temp.prec7,
-                  Veg.z, Veg2.z, VegCV.z, Ind.z, Site.z, along = 3)
+X <- abind::abind(array(1, dim = dim(DOS)), DOS, temp.min, temp.prec7,
+                  Veg.z, VegCV.z, Ind.z, Site.z, along = 3)
 Y <- ymat
 
 n=dim(Y)[1]

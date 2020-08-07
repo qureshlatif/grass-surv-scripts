@@ -31,12 +31,44 @@ names.new <- str_replace(names.new, "_._", "_")
 names(dat.drone)[-c(1:3, ncol(dat.drone))] <- names.new
 
 dat.drone.means <- dat.drone %>% group_by(Site, Season, anillo) %>%
-  summarise_all(mean, na.rm = T)
+  select(Site, Season, anillo, Mesquite_5m:Yucca_500m, Shrub_All_5m:Shrub_All_500m, Distance_to_Fence) %>%
+  summarise_all(mean, na.rm = T) %>%
+  left_join(dat.drone %>% group_by(Site, Season, anillo) %>%
+              summarise(Max_Shrub_Height_5m = ifelse(any(Shrub_All_5m > 0), sum(Max_Shrub_Height_5m * Shrub_All_5m) / sum(Shrub_All_5m), NA),
+                        Max_Shrub_Height_50m = ifelse(any(Shrub_All_50m > 0), sum(Max_Shrub_Height_50m * Shrub_All_50m) / sum(Shrub_All_50m), NA),
+                        Max_Shrub_Height_500m = ifelse(any(Shrub_All_500m > 0), sum(Max_Shrub_Height_500m * Shrub_All_500m) / sum(Shrub_All_500m), NA),
+                        Mean_Shrub_Height_5m = ifelse(any(Shrub_All_5m > 0), sum(Mean_Shrub_Height_5m * Shrub_All_5m) / sum(Shrub_All_5m), NA),
+                        Mean_Shrub_Height_50m = ifelse(any(Shrub_All_50m > 0), sum(Mean_Shrub_Height_50m * Shrub_All_50m) / sum(Shrub_All_50m), NA),
+                        Mean_Shrub_Height_500m = ifelse(any(Shrub_All_500m > 0), sum(Mean_Shrub_Height_500m * Shrub_All_500m) / sum(Shrub_All_500m), NA)) %>%
+              select(Site, Season, anillo, Max_Shrub_Height_5m, Max_Shrub_Height_50m, Max_Shrub_Height_500m,
+                     Mean_Shrub_Height_5m, Mean_Shrub_Height_50m, Mean_Shrub_Height_500m),
+              by = c("Site", "Season", "anillo")) %>%
+  select(Site:Shrub_All_500m, Max_Shrub_Height_5m:Mean_Shrub_Height_500m, Distance_to_Fence) %>%
+  ungroup
 
 dat.drone.CVs <- dat.drone %>% group_by(Site, Season, anillo) %>%
+  select(Site, Season, anillo, Mesquite_5m:Yucca_500m, Shrub_All_5m:Shrub_All_500m) %>%
   summarise_all((function(x) sd(x, na.rm = T) / mean(x, na.rm = T))) %>%
-  ungroup %>%
-  mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x)))
+  left_join(
+    dat.drone %>% group_by(Site, Season, anillo) %>%
+      summarise(Max_Shrub_Height_5m = ifelse(any(Shrub_All_5m > 0), sqrt(sum(((Max_Shrub_Height_5m - mean(Max_Shrub_Height_5m)) ^ 2) * Shrub_All_5m) /
+                                                                           ((n() - 1) * sum(Shrub_All_5m)) / n()), NA),
+                Max_Shrub_Height_50m = ifelse(any(Shrub_All_50m > 0), sqrt(sum(((Max_Shrub_Height_50m - mean(Max_Shrub_Height_50m)) ^ 2) * Shrub_All_50m) /
+                                                                            ((n() - 1) * sum(Shrub_All_50m)) / n()), NA),
+                Max_Shrub_Height_500m = ifelse(any(Shrub_All_500m > 0), sqrt(sum(((Max_Shrub_Height_500m - mean(Max_Shrub_Height_500m)) ^ 2) * Shrub_All_500m) /
+                                                                             ((n() - 1) * sum(Shrub_All_500m)) / n()), NA),
+                Mean_Shrub_Height_5m = ifelse(any(Shrub_All_5m > 0), sqrt(sum(((Mean_Shrub_Height_5m - mean(Mean_Shrub_Height_5m)) ^ 2) * Shrub_All_5m) /
+                                                                            ((n() - 1) * sum(Shrub_All_5m)) / n()), NA),
+                Mean_Shrub_Height_50m = ifelse(any(Shrub_All_50m > 0), sqrt(sum(((Mean_Shrub_Height_50m - mean(Mean_Shrub_Height_50m)) ^ 2) * Shrub_All_50m) /
+                                                                             ((n() - 1) * sum(Shrub_All_50m)) / n()), NA),
+                Mean_Shrub_Height_500m = ifelse(any(Shrub_All_500m > 0), sqrt(sum(((Mean_Shrub_Height_500m - mean(Mean_Shrub_Height_500m)) ^ 2) * Shrub_All_500m) /
+                                                                              ((n() - 1) * sum(Shrub_All_500m)) / n()), NA)) %>%
+      select(Site, Season, anillo, Max_Shrub_Height_5m, Max_Shrub_Height_50m, Max_Shrub_Height_500m,
+             Mean_Shrub_Height_5m, Mean_Shrub_Height_50m, Mean_Shrub_Height_500m),
+    by = c("Site", "Season", "anillo")
+  ) %>%
+  ungroup# %>%
+  #mutate_all((function(x) ifelse(is.na(x), mean(x, na.rm = T), x))) # I don't think we want to do this here. Instead, we want to do this for each dataset right before analysis.
 names(dat.drone.CVs)[-c(1:3)] <- str_c(names(dat.drone.CVs)[-c(1:3)], "_CV")
 
 dat.drone.n <- dat.drone %>% group_by(Site, Season, anillo) %>%
@@ -45,6 +77,12 @@ names(dat.drone.n)[-c(1:3)] <- str_c(names(dat.drone.n)[-c(1:3)], "_n")
 
 dat.drone.sum <- dat.drone.means %>%
   left_join(dat.drone.CVs, by = c("Site", "Season", "anillo")) %>%
-  left_join(dat.drone.n, by = c("Site", "Season", "anillo"))
+  left_join(dat.drone.n, by = c("Site", "Season", "anillo")) %>%
+  mutate(Max_Shrub_Height_5m_CV = Max_Shrub_Height_5m_CV / Max_Shrub_Height_5m,
+         Max_Shrub_Height_50m_CV = Max_Shrub_Height_50m_CV / Max_Shrub_Height_50m,
+         Max_Shrub_Height_500m_CV = Max_Shrub_Height_500m_CV / Max_Shrub_Height_500m,
+         Mean_Shrub_Height_5m_CV = Mean_Shrub_Height_5m_CV / Mean_Shrub_Height_5m,
+         Mean_Shrub_Height_50m_CV = Mean_Shrub_Height_50m_CV / Mean_Shrub_Height_50m,
+         Mean_Shrub_Height_500m_CV = Mean_Shrub_Height_500m_CV / Mean_Shrub_Height_500m)
 
 write.csv(dat.drone.sum, "Drone_individual.csv", row.names = F)

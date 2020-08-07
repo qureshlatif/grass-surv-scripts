@@ -8,11 +8,11 @@ library(tictoc)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
-#load("Data_compiled_MissingCovsImputed.RData")
-load("Data_compiled_2018.RData")
+load("Data_compiled_MissingCovsImputed.RData")
+#load("Data_compiled_2018.RData")
 scripts.loc <- "grass-surv-scripts/"
 spp <- "GRSP" # BAIS or GRSP
-mod.nam <- "2018"
+mod.nam <- "ShrubSpp"
 chain <- 1 # If running parallel chains
 save.out <- str_c("mod_mcmcR_", mod.nam, "_", spp)
 
@@ -135,9 +135,8 @@ source(str_c(scripts.loc, "CJSRL.hmm.adapt.mcmc.R"))
 
 n.mcmc=200000
 rm(.Random.seed, envir=.GlobalEnv)
-#s.reg.opt <- 0.0811578947368421 # For BAIS
-#s.reg.opt <- 0.0811578947368421 # For GRSP, Big Cheese model
-#s.reg.opt <- 0.06552632 # For GRSP, ShrubSpp model
+#s.reg.opt <- 0.174947368421053 # For BAIS, Big Cheese & ShrubSpp
+#s.reg.opt <- 0.0811578947368421 # For GRSP, Big Cheese & ShrubSpp
 
 tic()
 out=CJSRL.hmm.adapt.mcmc(Y,X,n.mcmc,beta.tune=.01,s.reg=s.reg.opt,p=.9,p.tune=0.005,psi=.1,
