@@ -326,8 +326,8 @@ p.height.BAIS <- ggplot(dat.plot.shrubs, aes(x = x1, y = PSR.md)) +
   geom_line(aes(color = x2), size = 1) +
   geom_errorbar(data = dat.plot.noshrubs, aes(x = x1, ymin = PSR.lo, ymax = PSR.hi), width = 0.01) +
   geom_point(data = dat.plot.noshrubs, aes(x = x1, y = PSR.md), size = 2) +
-  scale_color_manual(labels = c("0.00006", "0.15"), values = c("#999999", "#009E73")) +
-  scale_fill_manual(labels = c("0.00006", "0.15"), values = c("#999999", "#009E73")) +
+  scale_color_manual(labels = c("0.006", "15"), values = c("#999999", "#009E73")) +
+  scale_fill_manual(labels = c("0.006", "15"), values = c("#999999", "#009E73")) +
   annotate("text", x = -0.03, y = 0.3, label = "No shrubs", size = 4, angle = 90) +
   geom_vline(xintercept = 0.055, linetype = "dashed") +
   labs(fill = "Shrub cover", color = "Shrub cover") + 
@@ -336,7 +336,8 @@ p.height.BAIS <- ggplot(dat.plot.shrubs, aes(x = x1, y = PSR.md)) +
 
 dat.plot <- dat.plot.Max_Shrub_Height_5mXShrub_All_5m.BAIS %>%
   filter(x2 > 0) %>%
-  mutate(precision = 1/(PSR.hi - PSR.lo))
+  mutate(precision = 1/(PSR.hi - PSR.lo)) %>%
+  mutate(x2 = x2*100)
 p.heat.BAIS <- ggplot(dat.plot, aes(x1, x2)) +
   geom_tile(aes(fill = PSR.md), color = "white") +
   scale_fill_gradient(low = "#0072B2", high = "#D55E00") +
@@ -366,8 +367,8 @@ p.height.GRSP <- ggplot(dat.plot.shrubs, aes(x = x1, y = PSR.md)) +
   geom_line(aes(color = x2), size = 1) +
   geom_errorbar(data = dat.plot.noshrubs, aes(x = x1, ymin = PSR.lo, ymax = PSR.hi), width = 0.01) +
   geom_point(data = dat.plot.noshrubs, aes(x = x1, y = PSR.md), size = 2) +
-  scale_color_manual(labels = c("0.0002", "0.18"), values = c("#999999", "#009E73")) +
-  scale_fill_manual(labels = c("0.0002", "0.18"), values = c("#999999", "#009E73")) + 
+  scale_color_manual(labels = c("0.02", "18"), values = c("#999999", "#009E73")) +
+  scale_fill_manual(labels = c("0.02", "18"), values = c("#999999", "#009E73")) + 
   annotate("text", x = -0.03, y = 0.3, label = "No shrubs", size = 4, angle = 90) +
   geom_vline(xintercept = 0.055, linetype = "dashed") +
   labs(fill = "Shrub cover (%)", color = "Shrub cover (%)") + 
@@ -376,7 +377,8 @@ p.height.GRSP <- ggplot(dat.plot.shrubs, aes(x = x1, y = PSR.md)) +
 
 dat.plot <- dat.plot.Max_Shrub_Height_5mXShrub_All_5m.GRSP %>%
   filter(x2 > 0) %>%
-  mutate(precision = 1/(PSR.hi - PSR.lo))
+  mutate(precision = 1/(PSR.hi - PSR.lo)) %>%
+  mutate(x2 = x2*100)
 p.heat.GRSP <- ggplot(dat.plot, aes(x1, x2)) +
   geom_tile(aes(fill = PSR.md), color = "white") +
   scale_fill_gradient(low = "#0072B2", high = "#D55E00") +
