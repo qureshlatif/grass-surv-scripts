@@ -10,26 +10,27 @@ load("Data_compiled_MissingCovsImputed.RData")
 spp <- "GRSP" # BAIS or GRSP
 mod.nam <- "JAGS"
 scripts.loc <- "grass-surv-scripts/"
-model.file <- str_c(scripts.loc, "model_CJSRL_SiteXSeason.jags")
+saveJAGS.loc <- "saveJAGS/"
+model.file <- str_c(scripts.loc, "model_CJSRL_SiteXSeason_Transmitter.jags")
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 0 #1000 # burn in
-ni <- 20000 # number of iterations
+nb <- 10 #0 #1000 # burn in
+ni <- 20 #20000 # number of iterations
 nt <- 1# 10 # thinning
 ns <- 50 # number of files for saveJAGS
 
-save.out <- str_c("mod_CJSRL_SiteXSeason_", spp)
+save.out <- str_c("mod_CJSRL_SiteXSeason_Transmitter_", spp)
 #______________________________#
 
 # Data objects to send to JAGS
 data.nams <- c("Y.alive", "Y.dead", "first", "last",
                "nBird", "nSite", "nSeason", "nDOS", "ncovs",
-               "SeasonInd", "SiteInd", "X")#,
-               #"DOSdepl", "time_since_depl", "after_depl")
+               "SeasonInd", "SiteInd", "X",
+               "DOSdepl", "time_since_depl", "after_depl")
 
 # Stuff to save from JAGS
-parameters <- c("B0.mean", "B0.sd", "B0", "B", "p", "psi")
+parameters <- c("B0.mean", "B0.sd", "B0", "B", "B.trans", "P.trans", "p", "psi")
 
 # Compile data #
 source(str_c(scripts.loc, "Data_processing_", mod.nam, "_", spp, ".R"))
@@ -46,9 +47,9 @@ names(data) <- data.nams
 st.time <- Sys.time()
 out <- jagsUI(data, inits, parameters.to.save = parameters, model.file, n.thin=nt, n.chains=nc,
               n.burnin=nb, n.iter=ni, parallel=TRUE)
-#if(!file.exists(str_c("saveJAGS/", save.out))) dir.create(str_c("saveJAGS/", save.out))
+#if(!file.exists(str_c(saveJAGS.loc, save.out))) dir.create(str_c(saveJAGS.loc, save.out))
 #out <- saveJAGS(data = data, inits = inits, params = parameters, modelFile = model.file, thin = nt, chains = nc, # taking up saveJAGS instead to save as we go.
-#                burnin = nb, sample2save = ((ni/nt)/ns), nSaves = ns, fileStub = str_c("saveJAGS/", save.out, "/modsave"))
+#                burnin = nb, sample2save = ((ni/nt)/ns), nSaves = ns, fileStub = str_c(saveJAGS.loc, save.out, "/modsave"))
 end.time <- Sys.time()
 run.time <- end.time - st.time
 run.time
@@ -57,8 +58,8 @@ rm(st.time,end.time)
 #out <- resumeJAGS(fileStub = str_c("saveJAGS/", save.out, "/modsave"), nSaves = 40)
 
 # Gather, combine, and summarize JAGS saves from hard drive #
-rsav <- recoverSaves(str_c("saveJAGS/", save.out, "/modsave"))
-mod.raw <- combineSaves(rsav, burnFiles = 10)
+rsav <- recoverSaves(str_c(saveJAGS.loc, save.out, "/modsave"))
+mod.raw <- combineSaves(rsav, burnFiles = 5, thin = 10)
 Rhat <- gelman.diag(mod.raw)$psrf[, 2]
 neff <- effectiveSize(mod.raw)
 

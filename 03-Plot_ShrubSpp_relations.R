@@ -7,177 +7,137 @@ theme_set(theme_cowplot())
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 scripts.loc <- "grass-surv-scripts/"
 
-###################
-# Baird's Sparrow #
-###################
+load("ShrubSpp_cache.RData")
+colors.spp <- c("saddlebrown", "#009E73")
 
-load("ShrubSpp_BAIS_cache.RData")
+## Plots for time-varying covariates ##
+# Mean temperature prior 7 days #
+supp <- c(T, F)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.temp.prec7.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.temp.prec7.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP")))
+p <- ggplot(dat.plot, aes(x = x, y = DSR.md)) +
+  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  #ylim(0.94, 1) +
+  labs(color = "Species", fill = "Species", linetype = "Species") +
+  xlab(expression('Mean temp prior 7 days ('*degree*C*')')) + ylab("Survival over 90 days")
 
-# Plots for time-varying covariates #
-p.DOS.DSR <- ggplot(dat.plot.DOS, aes(x = x, y = DSR.md)) +
-  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  scale_x_continuous(breaks = c(20, 50, 81, 109), labels = c("Dec 1", "Jan 1", "Feb 1", "Mar 1")) +
-  xlab("Day of season") + ylab("Daily survival probability")
-
-p.temp.prec7.DSR <- ggplot(dat.plot.temp.prec7, aes(x = x, y = DSR.md)) +
-  geom_ribbon(aes(ymin = DSR.lo, ymax = DSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  xlab(expression('Mean temp prior 7 days ('*degree*C*')')) + ylab(NULL)
-
-p <- ggdraw() +
-  draw_plot(p.DOS.DSR,        x = 0, y = 0, width = 0.525, height = 0.95) +
-  draw_plot(p.temp.prec7.DSR, x = 0.525, y = 0, width = 0.475, height = 0.95) +
-  draw_plot_label("Baird's Sparrow", x = 0.45, y = 1, hjust = 0, size = 15)
-save_plot("Figure_ShrubSpp_BAIS_time-varying.tiff", p, ncol = 2, nrow = 1, dpi = 200)
+save_plot("Figure_ShrubSpp_time-varying.jpg", p, ncol = 1.3, nrow = 1, dpi = 600)
+#save_plot("Figure_ShrubSpp-varying.tiff", p, ncol = 3, nrow = 1, dpi = 600)
 
 # Plots for seasonally fixed covariates #
-p.pastos.PSR <- ggplot(dat.plot.pastos, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
+  # Grass cover #
+supp <- c(T, F)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.pastos.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.pastos.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP")))
+p.pastos.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  guides(color = F, fill = F, linetype = F) +
   xlab("Grass cover 5m (%)") + ylab(NULL)
 
-p.Juniper_5m.PSR <- ggplot(dat.plot.Juniper_5m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
+  # Juniper 5m #
+supp <- c(T, F)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.Juniper_5m.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.Juniper_5m.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP"))) %>%
+  mutate(x = x*100) # convert to percent
+p.Juniper_5m.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  labs(color = "Species", fill = "Species", linetype = "Species") +
   xlab("Juniper cover 5m (%)") + ylab(NULL)
 
-p.Yucca_5m.PSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("Yucca cover 5m (%)") + ylab(NULL)
-
-p.pasto_ht_cv.PSR <- ggplot(dat.plot.pasto_ht_cv, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV grass height 5m") + ylab(NULL)
-
-p.Shrub_All_5m_CV.PSR <- ggplot(dat.plot.Shrub_All_5m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV shrub cover 5m") + ylab(NULL)
-
-p.Max_Shrub_Height_50m_CV.PSR <- ggplot(dat.plot.Max_Shrub_Height_50m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV max shrub height 50m") + ylab(NULL)
-
-p.Max_Shrub_Height_500m_CV.PSR <- ggplot(dat.plot.Max_Shrub_Height_500m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV max shrub height 500m") + ylab(NULL)
-
-p.prey.PSR <- ggplot(dat.plot.prey, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab(expression('Bird density (per '*km^2*')')) + ylab(NULL)
-
-p <- ggdraw() +
-  draw_plot(p.pastos.PSR,                   x = 0.05,   y = 0.475, width = 0.2375, height = 0.475) +
-  draw_plot(p.Juniper_5m.PSR,               x = 0.2875, y = 0.475, width = 0.2375, height = 0.475) +
-  draw_plot(p.Yucca_5m.PSR,                 x = 0.5250, y = 0.475, width = 0.2375, height = 0.475) +
-  draw_plot(p.pasto_ht_cv.PSR,              x = 0.7625, y = 0.475, width = 0.2375, height = 0.475) +
-  draw_plot(p.Shrub_All_5m_CV.PSR,          x = 0.05,   y = 0,     width = 0.2375, height = 0.475) +
-  draw_plot(p.Max_Shrub_Height_50m_CV.PSR,  x = 0.2875, y = 0,     width = 0.2375, height = 0.475) +
-  draw_plot(p.Max_Shrub_Height_500m_CV.PSR, x = 0.5250, y = 0,     width = 0.2375, height = 0.475) +
-  draw_plot(p.prey.PSR,                     x = 0.7625, y = 0,     width = 0.2375, height = 0.475) +
-  draw_plot_label(c("Survival over 90 days", "Baird's Sparrow"),
-                  x = c(0, 0.5), y = c(0.37, 1), angle = c(90, 0), hjust = c(0, 0), size = c(20, 20))
-
-save_plot(str_c("Figure_PSR_", mod.nam, "_BAIS.tiff"), p, ncol = 4, nrow = 2, dpi = 200)
-
-#__________________________________________#
-
-#######################
-# Grasshopper Sparrow #
-#######################
-
-rm(list = ls())
-load("ShrubSpp_GRSP_cache.RData")
-
-# Plots for individual covariates #
-p.otra.PSR <- ggplot(dat.plot.otra, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("Other cover 5m (%)") + ylab(NULL)
-
-p.hierbas_cv.PSR <- ggplot(dat.plot.hierbas_cv, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV Forb cover 5m") + ylab(NULL)
-
-p.pasto_ht_cv.PSR <- ggplot(dat.plot.hierbas_cv, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV grass height 5m") + ylab(NULL)
-
-p.Mesquite_5m.PSR <- ggplot(dat.plot.Mesquite_5m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("Mesquite cover 5m (%)") + ylab(NULL)
-
-p.Juniper_500m.PSR <- ggplot(dat.plot.Juniper_500m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
+  # Juniper 500m #
+supp <- c(F, T)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.Juniper_500m.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.Juniper_500m.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP"))) %>%
+  mutate(x = x*100) # convert to percent
+p.Juniper_500m.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  guides(color = F, fill = F, linetype = F) +
   xlab("Juniper cover 500m (%)") + ylab(NULL)
 
-p.Yucca_5m.PSR <- ggplot(dat.plot.Yucca_5m, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
+  # Yucca 5m #
+supp <- c(T, T)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.Yucca_5m.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.Yucca_5m.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP"))) %>%
+  mutate(x = x*100) # convert to percent
+p.Yucca_5m.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  guides(color = F, fill = F, linetype = F) +
   xlab("Yucca cover 5m (%)") + ylab(NULL)
 
-p.Shrub_All_5m_CV.PSR <- ggplot(dat.plot.Shrub_All_5m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV shrub cover 5m") + ylab(NULL)
-
-p.Shrub_All_50m_CV.PSR <- ggplot(dat.plot.Shrub_All_50m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV shrub cover 50m") + ylab(NULL)
-
-p.Max_Shrub_Height_50m_CV.PSR <- ggplot(dat.plot.Max_Shrub_Height_50m_CV, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab("CV max shrub height 50m") + ylab(NULL)
-
-p.prey.PSR <- ggplot(dat.plot.prey, aes(x = x, y = PSR.md)) +
-  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi), alpha = 0.3) +
-  geom_line(size = 1) +
-  ylim(0, 1) +
-  xlab(expression('Bird density (per '*km^2*')')) + ylab(NULL)
+  # CV forb cover #
+supp <- c(F, T)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.hierbas_cv.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.hierbas_cv.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP")))
+p.hierbas_cv.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  guides(color = F, fill = F, linetype = F) +
+  xlab("CV forb cover 5m") + ylab(NULL)
 
 p <- ggdraw() +
-  draw_plot(p.otra.PSR,                     x = 0.05, y = 0.475, width = 0.19, height = 0.475) +
-  draw_plot(p.hierbas_cv.PSR,               x = 0.24, y = 0.475, width = 0.19, height = 0.475) +
-  draw_plot(p.pasto_ht_cv.PSR,              x = 0.43, y = 0.475, width = 0.19, height = 0.475) +
-  draw_plot(p.Mesquite_5m.PSR,              x = 0.62, y = 0.475, width = 0.19, height = 0.475) +
-  draw_plot(p.Juniper_500m.PSR,             x = 0.81, y = 0.475, width = 0.19, height = 0.475) +
-  draw_plot(p.Yucca_5m.PSR,                 x = 0.05, y = 0,     width = 0.19, height = 0.475) +
-  draw_plot(p.Shrub_All_5m_CV.PSR,          x = 0.24, y = 0,     width = 0.19, height = 0.475) +
-  draw_plot(p.Shrub_All_50m_CV.PSR,         x = 0.43, y = 0,     width = 0.19, height = 0.475) +
-  draw_plot(p.Max_Shrub_Height_50m_CV.PSR,  x = 0.62, y = 0,     width = 0.19, height = 0.475) +
-  draw_plot(p.prey.PSR,                     x = 0.81, y = 0,     width = 0.19, height = 0.475) +
-  draw_plot_label(c("Survival over 90 days", "Grasshopper Sparrow"),
-                  x = c(0, 0.4), y = c(0.37, 1), angle = c(90, 0), hjust = c(0, 0), size = c(20, 20))
+  draw_plot(p.pastos.PSR,       x = 0.05,      y = 0.5, width = 0.3166667, height = 0.5) +
+  draw_plot(p.Juniper_5m.PSR,   x = 0.3666667, y = 0.5, width = 0.4,       height = 0.5) +
+  draw_plot(p.Juniper_500m.PSR, x = 0.05,      y = 0,   width = 0.3166667, height = 0.5) +
+  draw_plot(p.Yucca_5m.PSR,     x = 0.3666667, y = 0,   width = 0.3166667, height = 0.5) +
+  draw_plot(p.hierbas_cv.PSR,   x = 0.6833333, y = 0,   width = 0.3166667, height = 0.5) +
+  draw_plot_label("Survival over 90 days", x = 0, y = 0.5, angle = 90, hjust = 0.5)
 
-save_plot(str_c("Figure_PSR_",mod.nam,"_GRSP.tiff"), p, ncol = 4, nrow = 2, dpi = 200)
-
-#__________________________________________#
+save_plot(str_c("Figure_PSR_", mod.nam, ".jpg"), p, ncol = 3, nrow = 2, dpi = 200)

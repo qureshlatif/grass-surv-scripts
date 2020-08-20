@@ -50,7 +50,7 @@ library(corrplot)
 ## Baird's Sparrow ##
 data.BAIS$Covs %>%
   select(Shrub_All_5m, Mean_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
-         Shrub_All_500m_CV, Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV,
+         Shrub_All_5m_CV, Shrub_All_50m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV,
          Tumbleweed_5m:Hilaria_500m,
          Bare_Ground_5m_CV:Other_Grass_500m_CV,
          Grass_5m_CV:Hilaria_500m_CV) %>% cor(use = "pairwise.complete.obs") %>%
@@ -59,7 +59,7 @@ data.BAIS$Covs %>%
 pdf("Correlations_2018_BAIS.pdf")
 data.BAIS$Covs %>%
   select(Shrub_All_5m, Mean_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
-         Shrub_All_500m_CV, Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV,
+         Shrub_All_5m_CV, Shrub_All_50m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV,
          Tumbleweed_5m:Hilaria_500m,
          Bare_Ground_5m_CV:Other_Grass_500m_CV,
          Grass_5m_CV:Hilaria_500m_CV) %>% cor(use = "pairwise.complete.obs") %>%
@@ -69,7 +69,7 @@ dev.off()
 ## Grasshopper Sparrow ##
 data.GRSP$Covs %>%
   select(Shrub_All_5m, Mean_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
-         Shrub_All_500m_CV, Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV,
+         Shrub_All_5m_CV, Shrub_All_50m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV,
          Tumbleweed_5m:Hilaria_500m,
          Bare_Ground_5m_CV:Other_Grass_500m_CV,
          Grass_5m_CV:Hilaria_500m_CV) %>% cor(use = "pairwise.complete.obs") %>%
@@ -78,7 +78,7 @@ data.GRSP$Covs %>%
 pdf("Correlations_2018_GRSP.pdf")
 data.GRSP$Covs %>%
   select(Shrub_All_5m, Mean_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
-         Shrub_All_500m_CV, Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV,
+         Shrub_All_5m_CV, Shrub_All_50m_CV, Mean_Shrub_Height_50m_CV, Mean_Shrub_Height_500m_CV,
          Tumbleweed_5m:Hilaria_500m,
          Bare_Ground_5m_CV:Other_Grass_500m_CV,
          Grass_5m_CV:Hilaria_500m_CV) %>% cor(use = "pairwise.complete.obs") %>%

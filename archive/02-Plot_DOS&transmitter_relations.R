@@ -1,4 +1,4 @@
-library(jagsUI)
+library(saveJAGS)
 library(stringr)
 library(dplyr)
 library(R.utils)
@@ -7,14 +7,13 @@ library(ggplot2)
 library(cowplot)
 theme_set(theme_cowplot())
 
-#setwd("/home/RMBO.LOCAL/quresh.latif/CPW_beetle")
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled.RData")
+load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
 spp <- "GRSP" # BAIS or GRSP
-mod <- loadObject(str_c("mod_prototype_Veg_", spp))
-DS.lbnd <- 0.975 # Lower bound for survival (y-axis) for days since deployment plot.
+mod <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter_", spp))
+DS.lbnd <- 0.9 # Lower bound for survival (y-axis) for days since deployment plot.
 #______________________________#
 
 # Detection data #
@@ -29,27 +28,11 @@ nSeason <- max(SeasonInd)
 SiteInd <- data.spp$Covs$SiteInd
 nSite <- max(SiteInd)
 
-# # Daily survival
-# hist(expit(mod$sims.list$B0.mean))
-# median(expit(mod$sims.list$B0.mean))
-# quantile(expit(mod$sims.list$B0.mean), prob = 0.025, type = 8)
-# quantile(expit(mod$sims.list$B0.mean), prob = 0.975, type = 8)
-
-# # Mean seasonal survival rate (***This is incorrect. Need to calculate across the entire season not just at the mean date when survival was lowest***) #
-# daysMonitored <- which(apply(data.spp$ymat, 2, function(x) any(!is.na(x))))
-# SeasLength <- max(daysMonitored) - min(daysMonitored)
-# dailySurv <- expit(mod$sims.list$B0.mean)
-# seasonSurv <- dailySurv^SeasLength
-# median(seasonSurv)
-# quantile(seasonSurv, prob = 0.025, type = 8)
-# quantile(seasonSurv, prob = 0.975, type = 8)
-
-## DayOfSeason & transmitter effects ##
 # Day of season #
 DOS.x <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
 x <- seq(min(DOS.x[which(!is.na(ymat))]), max(DOS.x[which(!is.na(ymat))]))
 z <- (x - mean(DOS.x[which(!is.na(ymat))])) / sd(DOS.x[which(!is.na(ymat))])
-DS <- expit(mod$sims.list$B0.mean + mod$sims.list$B.DOS %*% t(z) + mod$sims.list$B.DOS2 %*% t(z)^2)
+DS <- expit(mod$sims.list$B0 + mod$sims.list$B.DOS %*% t(z) + mod$sims.list$B.DOS2 %*% t(z)^2)
 dat.plt <- data.frame(x = x,
                       y.md = apply(DS, 2, median),
                       y.lo = apply(DS, 2, function(x) quantile(x, prob = 0.025, type = 8)),
@@ -62,7 +45,7 @@ p.DOS <- ggplot(dat.plt, aes(x = x, y = y.md)) +
 
 # Days since transmitter deployment #
 DaysSinceDepl.x <- 0:20
-DS <- matrix(NA, nrow = mod$mcmc.info$n.samples, ncol = length(DaysSinceDepl.x))
+DS <- matrix(NA, nrow = length(mod$sims.list$B.trans), ncol = length(DaysSinceDepl.x))
 for(i in 1:length(DaysSinceDepl.x)) DS[, i] <-
   expit(mod$sims.list$B0.mean + mod$sims.list$B.trans * (DaysSinceDepl.x[i] < mod$sims.list$P.trans))
 dat.plt <- data.frame(x = DaysSinceDepl.x,

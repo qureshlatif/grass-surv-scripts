@@ -49,7 +49,7 @@ dat.plot <- SiteSeasons %>%
 
 ## Compare with Site X Season estimates ###
 
-modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason", "_", spp))
+modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter", "_", spp))
 X.sum <- X %>% apply(c(2, 3), function(x) tapply(x, Site_Season, mean))
 source(str_c("grass-surv-scripts/Data_processing_JAGS_", spp, ".r"))
 X.sum <- X.sum[,,X.nams]
@@ -85,15 +85,17 @@ p.BAIS.pred <- ggplot(dat.plot, aes(x = Season, y = PSR.md, fill = Site, shape =
   geom_errorbar(aes(ymin = PSR.lo, ymax = PSR.hi), width = 0.2, position = position_dodge(0.8)) +
   geom_label(aes(label = n, x = Season, y = PSR.md), position = position_dodge(0.8), angle = 90) +
   scale_discrete_manual(aesthetics = "fill", labels = c("Cuza", "Janos", "Marfa", "Vaco"), values = c("#E69F00", "#56B4E9", "#009E73", "#F0E442")) +
-  ylab("Predicted survival over 90 days") + xlab("Winter (Nov-Mar)") +
-  annotate("text", x = 1, y = 0.75, label = "Regularized covariate model", hjust = 0)
+  ylim(0,1) +
+  ylab(NULL) + xlab("Winter (Nov-Mar)") +
+  annotate("text", x = 1, y = 1, label = "Regularized covariate model", hjust = 0)
 
 p.BAIS.est <- ggplot(dat.plot, aes(x = Season, y = PSR.est, fill = Site, shape = Site)) +
   geom_errorbar(aes(ymin = PSR.est.lo, ymax = PSR.est.hi), width = 0.2, position = position_dodge(0.8)) +
   geom_label(aes(label = n, x = Season, y = PSR.est), position = position_dodge(0.8), angle = 90) +
   scale_discrete_manual(aesthetics = "fill", labels = c("Cuza", "Janos", "Marfa", "Vaco"), values = c("#E69F00", "#56B4E9", "#009E73", "#F0E442")) +
-  ylab("Proportion survived over 90 days") + xlab("Winter (Nov-Mar)") +
-  annotate("text", x = 1, y = 0.75, label = "Site X Season random effect model", hjust = 0)
+  ylim(0,1) +
+  ylab(NULL) + xlab("Winter (Nov-Mar)") +
+  annotate("text", x = 1, y = 1, label = "Site X Season random effect model", hjust = 0)
 
 #######################
 # Grasshopper Sparrow #
@@ -136,7 +138,7 @@ dat.plot <- SiteSeasons %>%
 
 ## Compare with Site X Season estimates ###
 
-modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason", "_", spp))
+modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter", "_", spp))
 X.sum <- X %>% apply(c(2, 3), function(x) tapply(x, Site_Season, mean))
 source(str_c("grass-surv-scripts/Data_processing_JAGS_", spp, ".r"))
 X.sum <- X.sum[,,X.nams]
@@ -172,22 +174,25 @@ p.GRSP.pred <- ggplot(dat.plot, aes(x = Season, y = PSR.md, fill = Site, shape =
   geom_errorbar(aes(ymin = PSR.lo, ymax = PSR.hi), width = 0.2, position = position_dodge(0.8)) +
   geom_label(aes(label = n, x = Season, y = PSR.md), position = position_dodge(0.8), angle = 90) +
   scale_discrete_manual(aesthetics = "fill", labels = c("Cuza", "Janos", "Marfa", "Vaco"), values = c("#E69F00", "#56B4E9", "#009E73", "#F0E442")) +
-  ylab("Predicted survival over 90 days") + xlab("Winter (Nov-Mar)") +
-  annotate("text", x = 1, y = 0.75, label = "Regularized covariate model", hjust = 0)
+  ylim(0,1) +
+  ylab(NULL) + xlab("Winter (Nov-Mar)") +
+  annotate("text", x = 1, y = 1, label = "Regularized covariate model", hjust = 0)
 
 p.GRSP.est <- ggplot(dat.plot, aes(x = Season, y = PSR.est, fill = Site, shape = Site)) +
   geom_errorbar(aes(ymin = PSR.est.lo, ymax = PSR.est.hi), width = 0.2, position = position_dodge(0.8)) +
   geom_label(aes(label = n, x = Season, y = PSR.est), position = position_dodge(0.8), angle = 90) +
   scale_discrete_manual(aesthetics = "fill", labels = c("Cuza", "Janos", "Marfa", "Vaco"), values = c("#E69F00", "#56B4E9", "#009E73", "#F0E442")) +
-  ylab("Proportion survived over 90 days") + xlab("Winter (Nov-Mar)") +
-  annotate("text", x = 1, y = 0.75, label = "Site X Season random effect model", hjust = 0)
+  ylim(0,1) +
+  ylab(NULL) + xlab("Winter (Nov-Mar)") +
+  annotate("text", x = 1, y = 1, label = "Site X Season random effect model", hjust = 0)
 
 p <- ggdraw() +
-  draw_plot(p.BAIS.pred, x = 0,   y = 0.475, width = 0.5,  height = 0.475) +
-  draw_plot(p.GRSP.pred, x = 0.5, y = 0.475, width = 0.5,  height = 0.475) +
-  draw_plot(p.BAIS.est,  x = 0,   y = 0,     width = 0.5,  height = 0.475) +
-  draw_plot(p.GRSP.est,  x = 0.5, y = 0,     width = 0.5,  height = 0.475) +
-  draw_plot_label(c("Baird's Sparrow", "Grasshopper Sparrow"),
-                  x = c(0.15, 0.65), y = c(0.97, 0.97), size = c(15, 15))
+  draw_plot(p.BAIS.pred, x = 0.05,  y = 0.475, width = 0.475,  height = 0.475) +
+  draw_plot(p.GRSP.pred, x = 0.525, y = 0.475, width = 0.475,  height = 0.475) +
+  draw_plot(p.BAIS.est,  x = 0.05,  y = 0,     width = 0.475,  height = 0.475) +
+  draw_plot(p.GRSP.est,  x = 0.525, y = 0,     width = 0.475,  height = 0.475) +
+  draw_plot_label(c("Baird's Sparrow", "Grasshopper Sparrow", "Survival over 90 days"),
+                  x = c(0.15, 0.65, 0), y = c(0.97, 0.97, 0.5), size = c(15, 15, 25),
+                  hjust = c(0.5, 0.5, 0.5), angle = c(0, 0, 90))
 
-save_plot("Figure_SiteXYear_Rates.tiff", p, ncol = 3.8, nrow = 3.8, dpi = 600)
+save_plot("Figure_SiteXYear_Rates.jpg", p, ncol = 3.8, nrow = 3.8, dpi = 600)

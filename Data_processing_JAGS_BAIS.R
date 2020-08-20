@@ -13,6 +13,10 @@ nSite <- max(SiteInd)
 ## Covariates ##
 # Date #
 DOS <- t(matrix(1:nDOS, nrow = nDOS, ncol = nBird))
+DOSdepl <- first
+time_since_depl <- DOS - DOSdepl
+after_depl <- (time_since_depl > 0)*1
+
 X.mn <- mean(DOS[which(!is.na(ymat))]); X.sd <- sd(DOS[which(!is.na(ymat))])
 names(X.mn) <- names(X.sd) <- "DOS"
 DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])

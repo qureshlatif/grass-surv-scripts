@@ -4,29 +4,29 @@ library(R.utils)
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
 ## Summary function ##
-sum.fn <- function(x) {
+sum.fn <- function(x, ndig = 2) {
   md <- median(x)
   lo <- quantile(x, prob = 0.05, type = 8)
   hi <- quantile(x, prob = 0.95, type = 8)
   x.sum <- ifelse(lo > 0 | hi < 0,
-                  str_c(round(md, digits = 2),
+                  str_c(round(md, digits = ndig),
                         " (",
-                        round(lo, digits = 2),
+                        round(lo, digits = ndig),
                         ",",
-                        round(hi, digits = 2),
+                        round(hi, digits = ndig),
                         ")*"),
-                  str_c(round(md, digits = 2),
+                  str_c(round(md, digits = ndig),
                         " (",
-                        round(lo, digits = 2),
+                        round(lo, digits = ndig),
                         ",",
-                        round(hi, digits = 2),
+                        round(hi, digits = ndig),
                         ")"))
   return(x.sum)
 }                          
 
 ## Regularized covariate models ##
 load("Data_compiled_MissingCovsImputed.RData")
-mod.nam <- "ShrubSpp"
+mod.nam <- "BigCheese"
 mod.BAIS <- loadObject(str_c("mod_mcmcR_", mod.nam, "_BAIS"))
 mod.GRSP <- loadObject(str_c("mod_mcmcR_", mod.nam, "_GRSP"))
 
@@ -46,29 +46,50 @@ write.csv(out, str_c("Mod_estimates_", mod.nam, ".csv"), row.names = T)
 ## JAGS models with supported covariates and random effect ##
 load("Data_compiled_MissingCovsImputed.RData")
 spp <- "BAIS"
-mod.BAIS <- loadObject(str_c("mod_CJSRL_SiteXSeason_", spp))
+mod.BAIS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter_", spp))
 source(str_c("grass-surv-scripts/Data_processing_JAGS_", spp, ".r"))
 X.nams.BAIS <- X.nams
 
 spp <- "GRSP"
-mod.GRSP <- loadObject(str_c("mod_CJSRL_SiteXSeason_", spp))
+mod.GRSP <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter_", spp))
 source(str_c("grass-surv-scripts/Data_processing_JAGS_", spp, ".r"))
 X.nams.GRSP <- X.nams
 rm(X.nams)
 
-rows <- c("B0.mean", "B0.sd", str_c("B.", unique(c(X.nams.BAIS, X.nams.GRSP))), "psi", "p")
+rows <- c("DSR", "PSR", "B0.mean", "B0.sd", "P.trans", "B.trans", str_c("B.", unique(c(X.nams.BAIS, X.nams.GRSP))), "psi", "p")
 cols <- c("BAIS", "GRSP")
 out <- matrix(NA, nrow = length(rows), ncol = length(cols),
               dimnames = list(rows, cols))
 
 for(sp in c("BAIS", "GRSP")) {
   mod <- eval(as.name(str_c("mod.", sp)))
+  DSR <- QSLpersonal::expit(mod$sims.list$B0.mean)
+  out["DSR", sp] <- sum.fn(DSR, ndig = 3)
+  out["PSR", sp] <- sum.fn(DSR^90)
   out["B0.mean", sp] <- sum.fn(mod$sims.list$B0.mean)
   out["B0.sd", sp] <- sum.fn(mod$sims.list$B0.sd)
+  out["P.trans", sp] <- sum.fn(mod$sims.list$P.trans)
+  out["B.trans", sp] <- sum.fn(mod$sims.list$B.trans)
   X.nams <- eval(as.name(str_c("X.nams.", sp)))
   out[str_c("B.", X.nams), sp] <- apply(mod$sims.list$B, 2, sum.fn)
   out["psi", sp] <- sum.fn(mod$sims.list$psi)
   out["p", sp] <- sum.fn(mod$sims.list$p)
 }
 
-write.csv(out, "Mod_estimates_SiteXSeason.csv", row.names = T)
+write.csv(out, "Mod_estimates_SiteXSeason_Transmitter.csv", row.names = T)
+
+## Daily and 90-day survival estimates ##
+load("Data_compiled_MissingCovsImputed.RData")
+mods <- c("_BigCheese_BAIS","_BigCheese_GRSP","_ShrubSpp_BAIS","_ShrubSpp_GRSP","_2018_BAIS", "_2018_GRSP")
+rows <- c("Daily", "90-day")
+out <- matrix("", nrow = length(rows), ncol = length(mods),
+              dimnames = list(rows, mods))
+
+for(m in mods) {
+  mod <- loadObject(str_c("mod_mcmcR", m))
+  DSR <- QSLpersonal::expit(mod$sims.concat["B.Intercept",])
+  out["Daily", m] <- sum.fn(DSR, ndig = 3)
+  out["90-day", m] <- sum.fn(DSR^90)
+}
+
+write.csv(out, "Mean_survival_estimates.csv", row.names = T)

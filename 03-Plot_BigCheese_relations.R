@@ -399,6 +399,49 @@ p <- ggdraw() +
   
 save_plot("Figure_BigCheese_interactions.tiff", p, ncol = 2.5, nrow = 2, dpi = 600)
 
+#################################
+# Select plots for presentation #
+#################################
+
+# Bird density #
+supp <- c(T, T)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.prey.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.prey.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP")))
+p <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  labs(color = "Species", fill = "Species", linetype = "Species") +
+  xlab(expression('Bird density (per '*km^2*')')) + ylab(NULL)
+save_plot("Figure_presentation_bird_density_BigCheese.tiff", p, ncol = 1, nrow = 1, dpi = 600)
+
+# Shrike density #
+supp <- c(T, F)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.LOSH.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.LOSH.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP")))
+p <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp), alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  ylim(0, 0.5) +
+  labs(color = "Species", fill = "Species", linetype = "Species") +
+  xlab(expression('Shrike density (per '*km^2*')')) + ylab(NULL)
+save_plot("Figure_presentation_shrike_density_BigCheese.tiff", p, ncol = 1, nrow = 1, dpi = 600)
 
 
 

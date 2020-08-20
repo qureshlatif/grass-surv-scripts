@@ -9,7 +9,7 @@ nDOS <- ncol(ymat)
 # Vegetation #
 lin.only <- c("Tumbleweed_50m", "Rock_50m", "Rock_500m", "Amaranth_5m", "Amaranth_500m")
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(Shrub_All_5m, Mean_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
+  select(Shrub_All_5m, Max_Shrub_Height_5m, Juniper_5m, Mesquite_5m, Yucca_5m,
          Tumbleweed_50m, Hilaria_50m, Rock_50m, Rock_500m, Amaranth_5m, Amaranth_500m, Grass_50m)
 X.mn <- Veg %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
@@ -28,7 +28,7 @@ Veg.z <- Veg.z %>% data.matrix() %>%
 Veg2.z <- Veg.z[,,-ind.lin] ^ 2
 
 VegCV <- data.spp$Covs %>%
-  select(Shrub_All_500m_CV, Mean_Shrub_Height_5m_CV, Mean_Shrub_Height_50m_CV,
+  select(Shrub_All_5m_CV, Shrub_All_50m_CV, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
          Bare_Ground_50m_CV, Hilaria_5m_CV, Hilaria_50m_CV, Hilaria_500m_CV,
          Grass_5m_CV, Grass_500m_CV)
 X.add <- VegCV %>%
@@ -59,5 +59,11 @@ Y <- ymat
 
 n=dim(Y)[1]
 J=dim(Y)[2]
+
+# Add interactions #
+X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 1)))
+X.nams <- c(X.nams, "Max_Shrub_Height_5mXShrub_All_5m")
+dimnames(X)[[3]] <- X.nams
+X[,,"Max_Shrub_Height_5mXShrub_All_5m"] <- X[,,"Max_Shrub_Height_5m"]*X[,,"Shrub_All_5m"]
 
 rm(Veg, Veg.z, Veg2.z, VegCV, VegCV.z, X.add, lin.only, ind.lin)
