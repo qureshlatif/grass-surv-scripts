@@ -79,7 +79,8 @@ p <- ggdraw() +
   draw_plot(p.temp.min,   x = 0.35, y = 0, width = 0.3,  height = 1) +
   draw_plot(p.temp.prec7, x = 0.65, y = 0, width = 0.35, height = 1)
 
-save_plot("Figure_BigCheese_time-varying.tiff", p, ncol = 3, nrow = 1, dpi = 600)
+#save_plot("Figure_BigCheese_time-varying.tiff", p, ncol = 3, nrow = 1, dpi = 600)
+save_plot("Figure_BigCheese_time-varying.jpg", p, ncol = 3, nrow = 1, dpi = 600)
 
 ## Plots for seasonally fixed covariates ##
 # Forb cover #
@@ -309,7 +310,8 @@ p <- ggdraw() +
   draw_plot(p.Shrub_All_50m_CV.PSR,             x = 0.7625, y = 0,       width = 0.2375,  height = 0.3333) +
   draw_plot_label("Survival over 90 days", x = 0, y = 0.4, angle = 90, hjust = 0, size = 20)
 
-save_plot("Figure_BigCheese_additive.tiff", p, ncol = 3, nrow = 2.5, dpi = 600)
+#save_plot("Figure_BigCheese_additive.tiff", p, ncol = 3, nrow = 2.5, dpi = 600)
+save_plot("Figure_BigCheese_additive.jpg", p, ncol = 3, nrow = 2.5, dpi = 600)
 
 # Shrub cover X height #
 # BAIS #
@@ -397,7 +399,8 @@ p <- ggdraw() +
   draw_plot_label(c("Baird's Sparrow", "Grasshopper Sparrow"),
                   x = c(0.35, 0.28), y = c(1, 0.5))
   
-save_plot("Figure_BigCheese_interactions.tiff", p, ncol = 2.5, nrow = 2, dpi = 600)
+#save_plot("Figure_BigCheese_interactions.tiff", p, ncol = 2.5, nrow = 2, dpi = 600)
+save_plot("Figure_BigCheese_interactions.jpg", p, ncol = 2.5, nrow = 2, dpi = 600)
 
 #################################
 # Select plots for presentation #

@@ -5,6 +5,10 @@ library(lubridate)
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled.RData")
 
+#######################################
+# Summarize capture / monitoring data #
+#######################################
+
 cols <- c("No_indivs", "nDays", "nDets", "prpDaysDetWhenAlive", "nMort", "nMortDay1",
           "MortConfDayMed", "MortConfDay95thQntl", "nMortConfDayGT95th", "MortConfDayMax",
           "nSurv", "nMalf", "nUnk")
@@ -39,3 +43,195 @@ for(spp in dimnames(out)[[1]]) {
   out[spp, "nUnk"] <- sum(data.spp$Covs$resultado.final %in% c("Q", "U"))
 }
 write.csv(out, "Summary.csv", row.names = T)
+
+########################
+# Summarize covariates #
+########################
+
+## Individual-level covariates ##
+
+load("Data_compiled.RData")
+imputed.BAIS <- data.BAIS$Covs %>%
+  select(hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+         Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+         Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+         Distance_to_Fence, peso, female, adult) %>%
+  summarise_all(function(x) sum(is.na(x))) %>%
+  data.matrix() %>%
+  t()
+imputed.BAIS <- data.frame(Covariate = row.names(imputed.BAIS),
+                           Imputed = as.numeric(imputed.BAIS), stringsAsFactors = F)
+
+imputed.GRSP <- data.GRSP$Covs %>%
+  select(hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+         Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+         Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+         Distance_to_Fence, peso, female) %>%
+  summarise_all(function(x) sum(is.na(x))) %>%
+  data.matrix() %>%
+  t()
+imputed.GRSP <- data.frame(Covariate = row.names(imputed.GRSP),
+                           Imputed = as.numeric(imputed.GRSP), stringsAsFactors = F)
+
+load("Data_compiled_MissingCovsImputed.RData")
+covs <- data.BAIS$Covs %>%
+  select(hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+         Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+         Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+         Distance_to_Fence, peso, female, adult) %>%
+  mutate(hierbas_cv = hierbas_cv * 100,
+         pasto_ht_cv = pasto_ht_cv * 100,
+         otra_cv = otra_cv * 100,
+         Shrub_All_5m = Shrub_All_5m * 100,
+         Shrub_All_5m_CV = Shrub_All_5m_CV * 100,
+         Shrub_All_50m_CV = Shrub_All_50m_CV * 100,
+         Shrub_All_500m_CV = Shrub_All_500m_CV * 100,
+         Max_Shrub_Height_5m = Max_Shrub_Height_5m * 100,
+         Max_Shrub_Height_50m_CV = Max_Shrub_Height_50m_CV * 100,
+         Max_Shrub_Height_500m_CV = Max_Shrub_Height_500m_CV * 100,
+         Juniper_5m = Juniper_5m * 100,
+         Juniper_500m = Juniper_500m * 100,
+         Yucca_5m = Yucca_5m * 100,
+         Yucca_500m = Yucca_500m * 100,
+         Mesquite_5m = Mesquite_5m * 100)
+sumTab <- data.frame(Covariate = names(covs), stringsAsFactors = F) %>%
+  mutate(mean = apply(covs %>% data.matrix, 2, mean, na.rm = T) %>% round(digits = 2),
+         sd = apply(covs %>% data.matrix, 2, sd, na.rm = T) %>% round(digits = 2),
+         median = apply(covs %>% data.matrix, 2, median, na.rm = T) %>% round(digits = 2),
+         q05 = apply(covs %>% data.matrix, 2, function(x) quantile(x, prob = 0.05, type = 8, na.rm = T)) %>% round(digits = 2),
+         q95 = apply(covs %>% data.matrix, 2, function(x) quantile(x, prob = 0.95, type = 8, na.rm = T)) %>% round(digits = 2),
+         range = str_c(apply(covs %>% data.matrix, 2, min, na.rm = T) %>% round(digits = 2),
+                       " - ",
+                       apply(covs %>% data.matrix, 2, max, na.rm = T) %>% round(digits = 2))) %>%
+  left_join(imputed.BAIS, by = "Covariate")
+write.csv(sumTab, "Covariate_summaries_individual_BAIS.csv", row.names = F)
+
+covs <- data.GRSP$Covs %>%
+  select(hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+         Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+         Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+         Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+         Distance_to_Fence, peso, female) %>%
+  mutate(hierbas_cv = hierbas_cv * 100,
+         pasto_ht_cv = pasto_ht_cv * 100,
+         otra_cv = otra_cv * 100,
+         Shrub_All_5m = Shrub_All_5m * 100,
+         Shrub_All_5m_CV = Shrub_All_5m_CV * 100,
+         Shrub_All_50m_CV = Shrub_All_50m_CV * 100,
+         Shrub_All_500m_CV = Shrub_All_500m_CV * 100,
+         Max_Shrub_Height_5m = Max_Shrub_Height_5m * 100,
+         Max_Shrub_Height_50m_CV = Max_Shrub_Height_50m_CV * 100,
+         Max_Shrub_Height_500m_CV = Max_Shrub_Height_500m_CV * 100,
+         Juniper_5m = Juniper_5m * 100,
+         Juniper_500m = Juniper_500m * 100,
+         Yucca_5m = Yucca_5m * 100,
+         Yucca_500m = Yucca_500m * 100,
+         Mesquite_5m = Mesquite_5m * 100)
+sumTab <- data.frame(Covariate = names(covs), stringsAsFactors = F) %>%
+  mutate(mean = apply(covs %>% data.matrix, 2, mean, na.rm = T) %>% round(digits = 2),
+         sd = apply(covs %>% data.matrix, 2, sd, na.rm = T) %>% round(digits = 2),
+         median = apply(covs %>% data.matrix, 2, median, na.rm = T) %>% round(digits = 2),
+         q05 = apply(covs %>% data.matrix, 2, function(x) quantile(x, prob = 0.05, type = 8, na.rm = T)) %>% round(digits = 2),
+         q95 = apply(covs %>% data.matrix, 2, function(x) quantile(x, prob = 0.95, type = 8, na.rm = T)) %>% round(digits = 2),
+         range = str_c(apply(covs %>% data.matrix, 2, min, na.rm = T) %>% round(digits = 2),
+                       " - ",
+                       apply(covs %>% data.matrix, 2, max, na.rm = T) %>% round(digits = 2))) %>%
+  left_join(imputed.GRSP, by = "Covariate")
+write.csv(sumTab, "Covariate_summaries_individual_GRSP.csv", row.names = F)
+
+## Site-level covariate summaries ##
+load("Data_compiled_MissingCovsImputed.RData")
+dat.site %>%
+  select(Site, Season, LOSH, prey) %>%
+  mutate(LOSH = round(LOSH, digits = 2) %>% as.character(),
+         prey = round(prey, digits = 2) %>% as.character()) %>%
+  left_join(
+    data.BAIS$Covs %>%
+      select(Site, Season, hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+             Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+             Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+             Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+             Distance_to_Fence, peso, female) %>%
+      mutate(hierbas_cv = hierbas_cv * 100,
+             pasto_ht_cv = pasto_ht_cv * 100,
+             otra_cv = otra_cv * 100,
+             Shrub_All_5m = Shrub_All_5m * 100,
+             Shrub_All_5m_CV = Shrub_All_5m_CV * 100,
+             Shrub_All_50m_CV = Shrub_All_50m_CV * 100,
+             Shrub_All_500m_CV = Shrub_All_500m_CV * 100,
+             Max_Shrub_Height_5m = Max_Shrub_Height_5m * 100,
+             Max_Shrub_Height_50m_CV = Max_Shrub_Height_50m_CV * 100,
+             Max_Shrub_Height_500m_CV = Max_Shrub_Height_500m_CV * 100,
+             Juniper_5m = Juniper_5m * 100,
+             Juniper_500m = Juniper_500m * 100,
+             Yucca_5m = Yucca_5m * 100,
+             Yucca_500m = Yucca_500m * 100,
+             Mesquite_5m = Mesquite_5m * 100) %>%
+      group_by(Site, Season) %>%
+      summarise_all(function(x) {
+        str_c(
+          mean(x, na.rm = T) %>% round(digits = 2),
+          ",",
+          median(x, na.rm = T) %>% round(digits = 2),
+          "(",
+          quantile(x, prob = 0.05, type = 8, na.rm = T) %>% round(digits = 2),
+          ",",
+          quantile(x, prob = 0.95, type = 8, na.rm = T) %>% round(digits = 2),
+          ")"
+        )
+      }),
+    by = c("Site", "Season")
+  ) %>%
+  arrange(Site, Season) %>%
+  as.matrix() %>%
+  t() %>%
+  write.csv("Covariate_summaries_site_BAIS.csv")
+
+dat.site %>%
+  select(Site, Season, LOSH, prey) %>%
+  mutate(LOSH = round(LOSH, digits = 2) %>% as.character(),
+         prey = round(prey, digits = 2) %>% as.character()) %>%
+  left_join(
+    data.GRSP$Covs %>%
+      select(Site, Season, hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
+             Shrub_All_5m, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
+             Max_Shrub_Height_5m, Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV,
+             Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m, Mesquite_5m,
+             Distance_to_Fence, peso, female) %>%
+      mutate(hierbas_cv = hierbas_cv * 100,
+             pasto_ht_cv = pasto_ht_cv * 100,
+             otra_cv = otra_cv * 100,
+             Shrub_All_5m = Shrub_All_5m * 100,
+             Shrub_All_5m_CV = Shrub_All_5m_CV * 100,
+             Shrub_All_50m_CV = Shrub_All_50m_CV * 100,
+             Shrub_All_500m_CV = Shrub_All_500m_CV * 100,
+             Max_Shrub_Height_5m = Max_Shrub_Height_5m * 100,
+             Max_Shrub_Height_50m_CV = Max_Shrub_Height_50m_CV * 100,
+             Max_Shrub_Height_500m_CV = Max_Shrub_Height_500m_CV * 100,
+             Juniper_5m = Juniper_5m * 100,
+             Juniper_500m = Juniper_500m * 100,
+             Yucca_5m = Yucca_5m * 100,
+             Yucca_500m = Yucca_500m * 100,
+             Mesquite_5m = Mesquite_5m * 100) %>%
+      group_by(Site, Season) %>%
+      summarise_all(function(x) {
+        str_c(
+          mean(x, na.rm = T) %>% round(digits = 2),
+          ",",
+          median(x, na.rm = T) %>% round(digits = 2),
+          "(",
+          quantile(x, prob = 0.05, type = 8, na.rm = T) %>% round(digits = 2),
+          ",",
+          quantile(x, prob = 0.95, type = 8, na.rm = T) %>% round(digits = 2),
+          ")"
+        )
+      }),
+    by = c("Site", "Season")
+  ) %>%
+  arrange(Site, Season) %>%
+  as.matrix() %>%
+  t() %>%
+  write.csv("Covariate_summaries_site_GRSP.csv")
