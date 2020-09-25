@@ -8,10 +8,10 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 
-vars.to.plot.DSR <- c("temp.prec7")
-vars.quad.DSR <- c(F)
-vars.to.plot.PSR <- c("pastos", "Juniper_5m", "Juniper_500m", "Yucca_5m", "hierbas_cv")
-vars.quad.PSR <- c(T, T, T, T, F)
+vars.to.plot.DSR <- c("DOS", "temp.min")
+vars.quad.DSR <- c(T, F)
+vars.to.plot.PSR <- c("pastos", "Juniper_5m", "Juniper_500m", "Yucca_5m", "Mesquite_5m")
+vars.quad.PSR <- c(T, T, T, T, T)
 
 spp.vec <- c("BAIS", "GRSP") # BAIS or GRSP
 mod.nam <- "ShrubSpp"
@@ -93,7 +93,6 @@ for(spp in spp.vec) {
   }
 }
 
-rm(mod, B0, B1, B12, B2, B22, B3, B.DOS, B.DOS2, B.temp.min, B.temp.prec7,
-   x, z, z1, z2, z.arr, z1.arr, z2.arr, z.DOS,
+rm(mod, B0, B1, B2, B.DOS, B.DOS2, B.temp.min, B.temp.prec7, x, z, z.arr, z.DOS,
    z.DOS2, z.temp.min, z.temp.prec7, DSR, PSR, st, end, dat.plot, data.spp, v)
 save.image("ShrubSpp_cache.RData")

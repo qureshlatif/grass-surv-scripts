@@ -37,8 +37,12 @@ temp.prec7[which(is.na(temp.prec7))] <- 0
 X.nams <- c("Intercept", "DOS", "temp.min", "temp.prec7")
 
 Veg.z <- data.spp$Covs %>% ungroup() %>%
+  mutate(OtherShrubs_5m = Shrub_All_5m - (Mesquite_5m + Juniper_5m + Yucca_5m),
+         OtherShrubs_50m = Shrub_All_50m - (Mesquite_50m + Juniper_50m + Yucca_50m),
+         OtherShrubs_500m = Shrub_All_500m - (Mesquite_500m + Juniper_500m + Yucca_500m)) %>%
   select(hierbas:otra, desnudo, Mesquite_5m, Mesquite_50m, Mesquite_500m,
          Juniper_5m, Juniper_50m, Juniper_500m, Yucca_5m, Yucca_50m, Yucca_500m,
+         OtherShrubs_5m, OtherShrubs_50m, OtherShrubs_500m,
          Shrub_All_5m, Shrub_All_50m, Shrub_All_500m, Max_Shrub_Height_5m,
          Max_Shrub_Height_50m, Max_Shrub_Height_500m, Distance_to_Fence) %>%
   mutate_all((function(x) (x - mean(x, na.rm = T)) / sd(x, na.rm = T)))

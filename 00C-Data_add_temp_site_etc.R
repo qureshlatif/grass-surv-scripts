@@ -19,7 +19,7 @@ dat.temp <- read.csv("weather/Data_temperature_all.csv", header = T, stringsAsFa
   
 
 ## Predator and prey density ##
-dat.dens <- read.csv("PLMX density estimates all species 2019.csv", header = T, stringsAsFactors = F) %>%
+dat.dens <- read.csv("PLMX density estimates all species 2020.csv", header = T, stringsAsFactors = F) %>%
   filter(Metric == "Density") %>%
   select(Stratum, Year, BirdCode, Median) %>%
   filter(Stratum %in% c("SRV-CUZA", "SRV-JANO", "SRV-VACO", "MIM")) %>%
@@ -70,10 +70,12 @@ dat.site$raptor[which(is.na(dat.site$raptor) & dat.site$Site == "Janos")] <-
 
 rm(dat.NDVI, dat.dens)
 
-## Add site-level covariate values to species data for analysis ## 
+## Add site-level covariate values to species data for analysis ##
 data.BAIS$Covs <- data.BAIS$Covs %>%
+  select(Site:Distance_to_Fence_n) %>%
   left_join(dat.site, by = c("Site", "Season"))
-data.GRSP$Covs <- data.GRSP$Covs %>%
+data.GRSP$Covs <- data.GRSP$Covs%>%
+  select(Site:Distance_to_Fence_n) %>%
   left_join(dat.site, by = c("Site", "Season"))
 
 save.image("Data_compiled_MissingCovsImputed.RData")

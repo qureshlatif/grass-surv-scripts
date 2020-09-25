@@ -42,9 +42,10 @@ temp.prec7[which(is.na(temp.prec7))] <- 0
 X.nams <- c("Intercept", "DOS", "DOS2", "temp.min", "temp.prec7")
 
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(pastos, salsola, otra, #arbusto,
+  mutate(OtherShrubs_5m = Shrub_All_5m - (Mesquite_5m + Juniper_5m + Yucca_5m)) %>%
+  select(hierba_ht, pastos, pasto_ht, salsola, otra, #arbusto,
          Juniper_5m, Juniper_500m, Yucca_5m, Yucca_500m,
-         Mesquite_5m, Distance_to_Fence)
+         Mesquite_5m, OtherShrubs_5m, Distance_to_Fence)
 X.add <- Veg %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(Veg)
@@ -63,8 +64,7 @@ Veg.z <- Veg.z %>% data.matrix() %>%
 Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
 
 VegCV <- data.spp$Covs %>%
-  select(hierbas_cv, pasto_ht_cv, otra_cv, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV,
-         Max_Shrub_Height_50m_CV, Max_Shrub_Height_500m_CV)
+  select(hierbas_cv, otra_cv, Shrub_All_5m_CV, Shrub_All_50m_CV, Shrub_All_500m_CV)
 X.add <- VegCV %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(VegCV)
@@ -104,7 +104,7 @@ Ind.z <- Ind.z %>% data.matrix() %>%
   aperm(c(1, 3, 2))
 
 Site <- data.spp$Covs %>%
-  select(prey, LOSH) # , raptor, NDVI
+  select(prey, LOSH, raptor) # , NDVI
 X.add <- Site %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(Site)
