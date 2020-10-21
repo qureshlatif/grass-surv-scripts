@@ -1,0 +1,19 @@
+model {
+
+#Priors
+B0 ~ dnorm(0, 0.6666667)
+psi ~ dunif(0, 1)
+p ~ dunif(0, 1)
+logit(S) <- B0
+
+for(i in 1:nBird) {
+  z[i, (first[i] + 1)] ~ dbern(S)
+  for(j in (first[i] + 2):last[i]) {
+    z[i, j] ~ dbern(S*z[i, (j - 1)])
+    }
+  for(j in (first[i] + 1):last[i]) {
+    Y.alive[i, j] ~ dbern(p * z[i, j])
+    Y.dead[i, j] ~ dbern(psi * (1 - z[i, j]))
+    }
+  }
+}
