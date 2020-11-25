@@ -98,19 +98,62 @@ write.csv(out, "Surv_estimates_Transmitter.csv", row.names = T)
 
 ## Daily and 90-day survival estimates ##
 load("Data_compiled_MissingCovsImputed.RData")
-mods <- c("BigCheese_BAIS","BigCheese_GRSP","ShrubSpp_BAIS","ShrubSpp_GRSP")#,"_2018_BAIS", "_2018_GRSP")
+mods <- c("BigCheese_BAIS","BigCheese_GRSP")
 rows <- c("Daily", "7-day", "30-day", "60-day", "90-day")
 out <- matrix("", nrow = length(rows), ncol = length(mods),
               dimnames = list(rows, mods))
 
 for(m in mods) {
   mod <- loadObject(str_c("mod_mcmcR_", m))
-  DSR <- QSLpersonal::expit(mod$sims.concat["B.Intercept",])
-  out["Daily", m] <- sum.fn(DSR, ndig = 3)
-  out["7-day", m] <- sum.fn(DSR^7)
-  out["30-day", m] <- sum.fn(DSR^30)
-  out["60-day", m] <- sum.fn(DSR^60)
-  out["90-day", m] <- sum.fn(DSR^90)
+  nsim <- dim(mod$sims.concat)[2]
+  nsim.samp <- sample(nsim, 10000, replace = F)
+  npar <- dim(mod$sims.concat)[1] - 2
+  ndays <- dim(X)[2]
+  nind <- dim(X)[1]
+  spp <- str_sub(m, -4, -1)
+  source("grass-surv-scripts/Data_processing_BigCheese.R")
+  DSR <- PSR07 <- PSR30 <- PSR60 <- PSR90 <- matrix(NA, nrow = length(nsim.samp), ncol = nind)
+  for(i in 1:ncol(DSR)) {
+    dsr <- matrix(NA, nrow = length(nsim.samp), ncol = ndays)
+    for(t in 1:dim(X)[2]) {
+      x <- X[i,t,] %>% array(dim = c(npar, length(nsim.samp)))
+      dsr[, t] <- QSLpersonal::expit(apply(mod$sims.concat[1:npar, nsim.samp] * x, 2, sum))
+    }
+    DSR[,i] <- apply(dsr, 1, mean)
+    PSR07[,i] <- apply(dsr, 1, function(x) {
+      st <- 1:(ndays-6)
+      end <- 7:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+    PSR30[,i] <- apply(dsr, 1, function(x) {
+      st <- 1:(ndays-29)
+      end <- 30:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+    PSR60[,i] <- apply(dsr, 1, function(x) {
+      st <- 1:(ndays-59)
+      end <- 60:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+    PSR90[,i] <- apply(dsr, 1, function(x) {
+      st <- 1:(ndays-89)
+      end <- 90:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+  }
+  out["Daily", m] <- sum.fn(apply(DSR, 1, mean), ndig = 3)
+  out["7-day", m] <- sum.fn(apply(PSR07, 1, mean))
+  out["30-day", m] <- sum.fn(apply(PSR30, 1, mean))
+  out["60-day", m] <- sum.fn(apply(PSR60, 1, mean))
+  out["90-day", m] <- sum.fn(apply(PSR90, 1, mean))
 }
 
 write.csv(out, "Mean_survival_estimates.csv", row.names = T)
