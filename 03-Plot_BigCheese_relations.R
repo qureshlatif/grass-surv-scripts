@@ -76,13 +76,16 @@ p.temp.prec7 <- ggplot(dat.plot, aes(x = x, y = DSR.md)) +
   xlab(expression('Mean temp prior 7 days ('*degree*C*')')) + ylab(NULL)
 
 # Put everything together
+# p <- ggdraw() +
+#   draw_plot(p.DOS,        x = 0,         y = 0, width = 0.3466667, height = 1) +
+#   draw_plot(p.temp.min,   x = 0.3666667, y = 0, width = 0.3266667, height = 1) +
+#   draw_plot(p.temp.prec7, x = 0.6833334, y = 0, width = 0.3266667, height = 1)
 p <- ggdraw() +
-  draw_plot(p.DOS,        x = 0,         y = 0, width = 0.3466667, height = 1) +
-  draw_plot(p.temp.min,   x = 0.3666667, y = 0, width = 0.3266667, height = 1) +
-  draw_plot(p.temp.prec7, x = 0.6833334, y = 0, width = 0.3266667, height = 1)
+  draw_plot(p.DOS,        x = 0,    y = 0, width = 0.52, height = 1) +
+  draw_plot(p.temp.prec7, x = 0.52, y = 0, width = 0.48, height = 1)
 
 #save_plot("Figure_BigCheese_time-varying.tiff", p, ncol = 3, nrow = 1, dpi = 600)
-save_plot("Figure_BigCheese_time-varying.jpg", p, ncol = 3, nrow = 1, dpi = 600)
+save_plot("Figure_BigCheese_time-varying.jpg", p, ncol = 2, nrow = 1, dpi = 600)
 
 ## Plots for seasonally fixed covariates ##
 # Forb cover #
@@ -280,7 +283,7 @@ p.Shrub_All_50m_CV.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  ylim(0, 0.3) +
+  ylim(0, 1) +
   guides(color = F, fill = F, linetype = F) +
   xlab("CV shrub cover 50m (%)") + ylab(NULL)
 
@@ -300,7 +303,7 @@ p.Shrub_All_500m_CV.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  ylim(0, 0.3) +
+  ylim(0, 1) +
   guides(color = F, fill = F, linetype = F) +
   xlab("CV shrub cover 500m (%)") + ylab(NULL)
 
@@ -396,8 +399,8 @@ p <- ggdraw() +
   draw_plot(p.Max_Shrub_Height_5m.PSR, x = 0.75, y = 0.5,  width = 0.25, height = 0.25) +
   
   draw_plot(p.Shrub_All_5m_CV.PSR,     x = 0,    y = 0.25, width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_500m_CV.PSR,   x = 0.25, y = 0.25, width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_50m_CV.PSR,    x = 0.5,  y = 0.25, width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_50m_CV.PSR,    x = 0.25, y = 0.25, width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_500m_CV.PSR,   x = 0.5,  y = 0.25, width = 0.25, height = 0.25) +
   draw_plot(p.Distance_to_Fence.PSR,   x = 0.75, y = 0.25, width = 0.25, height = 0.25) +
   
   draw_plot(p.peso.PSR,                x = 0,    y = 0,    width = 0.25, height = 0.25) +
