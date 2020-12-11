@@ -1,11 +1,12 @@
 library(tidyverse)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+rm.caps.mort <- T # If true, remove all capture, mortality, and transmitter lost locations
 
 # Attach drone variables
 dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, stringsAsFactors = F) %>%
   filter(!is.na(Distance_to_Fence)) %>% # Removes records with no data at all.
-  select(Site, Season, anillo, contains("m_Mesquite"), contains("m_Mimosa"), contains("m_Juniper"), contains("m_Yucca"),
+  select(Site, Season, anillo, estatus, contains("m_Mesquite"), contains("m_Mimosa"), contains("m_Juniper"), contains("m_Yucca"),
          contains("m_Max_Height_Mesquite"), contains("m_Max_Height_Yucca"), contains("m_Max_Height_Juniper"),
          contains("m_Mean_Height_Mesquite"), contains("m_Mean_Height_Yucca"), contains("m_Mean_Height_Juniper"),
          contains("m_Shrub_All_."), contains("m_Max_Shrub_Height"), contains("m_Mean_Shrub_Height"), Distance_to_Fence) %>%
@@ -22,13 +23,24 @@ dat.drone <- read.csv("drone_data/GPS Point Characteristics.csv", header = T, st
   mutate(X25m_Max_Shrub_Height = ifelse(X25m_Max_Shrub_Height == -Inf & Site == "Marfa", 0,
                                         ifelse(X25m_Max_Shrub_Height == -Inf & Site != "Marfa", NA, X25m_Max_Shrub_Height))) %>%
   mutate_all((function(x) ifelse(is.na(x), 0, x)))
-names.to.change <- names(dat.drone)[-c(1:3, ncol(dat.drone))]
+names.to.change <- names(dat.drone)[-c(1:4, ncol(dat.drone))]
 names.new <- str_split(names.to.change, "m_", simplify = T)[,2] %>%
   str_c("_",
         str_split(names.to.change, "m_", simplify = T)[,1] %>% str_sub(2, -1),
         "m")
 names.new <- str_replace(names.new, "_._", "_")
-names(dat.drone)[-c(1:3, ncol(dat.drone))] <- names.new
+names(dat.drone)[-c(1:4, ncol(dat.drone))] <- names.new
+
+if(rm.caps.mort) {
+  rm.codes <- c("C", "M", "R", "R1", "R2", "RF", "RC", "U")
+  dat.drone <- dat.drone %>% filter(!estatus %in% rm.codes)
+}
+dat.drone <- dat.drone %>%
+  select(-estatus)
+# sum(dat.drone$estatus %in% rm.codes)
+# dat.drone.sum <- dat.drone %>% dplyr::group_by(anillo) %>%
+#   summarise(n.CM = sum(estatus %in% rm.codes, na.rm = T), n = n()) %>%
+#   mutate(Prp_CM = n.CM / n)
 
 dat.drone.means <- dat.drone %>% group_by(Site, Season, anillo) %>%
   select(Site, Season, anillo, Mesquite_5m:Yucca_500m, Shrub_All_5m:Shrub_All_500m, Distance_to_Fence) %>%
@@ -85,4 +97,8 @@ dat.drone.sum <- dat.drone.means %>%
          Mean_Shrub_Height_50m_CV = Mean_Shrub_Height_50m_CV / Mean_Shrub_Height_50m,
          Mean_Shrub_Height_500m_CV = Mean_Shrub_Height_500m_CV / Mean_Shrub_Height_500m)
 
-write.csv(dat.drone.sum, "Drone_individual.csv", row.names = F)
+if(rm.caps.mort) {
+  write.csv(dat.drone.sum, "Drone_individual_noCM.csv", row.names = F)
+} else {
+  write.csv(dat.drone.sum, "Drone_individual.csv", row.names = F)
+}
