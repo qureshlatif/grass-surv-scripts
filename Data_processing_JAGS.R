@@ -23,27 +23,33 @@ DOS <- (DOS - mean(DOS[which(!is.na(ymat))])) / sd(DOS[which(!is.na(ymat))])
 DOS2 <- DOS^2
 
 # Temperature #
-temp.prec7 <- array(NA, dim = dim(DOS))
+temp.min <- temp.prec7 <- array(NA, dim = dim(DOS))
 for(i in 1:nBird) {
   ind <- dat.temp %>%
     filter(Site == data.spp$Covs$Site[i] &
              Season == data.spp$Covs$Season[i]) %>%
     pull(DOS)
+  temp.min[i, ind] <- dat.temp %>%
+    filter(Site == data.spp$Covs$Site[i] &
+             Season == data.spp$Covs$Season[i]) %>%
+    pull(temp.min)
   temp.prec7[i, ind] <- dat.temp %>%
     filter(Site == data.spp$Covs$Site[i] &
              Season == data.spp$Covs$Season[i]) %>%
     pull(temp.prec7)
 }
-X.mn <- c(X.mn, temp.prec7 = mean(temp.prec7[which(!is.na(ymat))]))
-X.sd <- c(X.sd, temp.prec7 = sd(temp.prec7[which(!is.na(ymat))]))
+X.mn <- c(X.mn, temp.min = mean(temp.min[which(!is.na(ymat))]), temp.prec7 = mean(temp.prec7[which(!is.na(ymat))]))
+X.sd <- c(X.sd, temp.min = sd(temp.min[which(!is.na(ymat))]), temp.prec7 = sd(temp.prec7[which(!is.na(ymat))]))
+temp.min <- (temp.min - mean(temp.min[which(!is.na(ymat))])) / sd(temp.min[which(!is.na(ymat))])
+temp.min[which(is.na(temp.min))] <- 0
 temp.prec7 <- (temp.prec7 - mean(temp.prec7[which(!is.na(ymat))])) / sd(temp.prec7[which(!is.na(ymat))])
 temp.prec7[which(is.na(temp.prec7))] <- 0
 
-X.nams <- c("DOS", "DOS2", "temp.prec7")
+X.nams <- c("DOS", "DOS2", "temp.min", "temp.prec7")
 
 # Vegetation #
 Veg <- data.spp$Covs %>% ungroup() %>%
-  select(hierbas, hierba_ht, pasto_ht, otra,
+  select(hierbas, hierba_ht, pastos, pasto_ht, salsola, otra,
          Shrub_All_5m, Max_Shrub_Height_5m, Distance_to_Fence)
 X.add <- Veg %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
@@ -63,8 +69,7 @@ Veg.z <- Veg.z %>% data.matrix() %>%
 Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
 
 VegCV <- data.spp$Covs %>%
-  select(hierbas_cv, otra_cv, Shrub_All_5m_CV,
-         Shrub_All_50m_CV, Shrub_All_500m_CV)
+  select(hierbas_cv, Shrub_All_5m_CV)
 X.add <- VegCV %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(VegCV)
@@ -101,7 +106,7 @@ Ind.z <- Ind.z %>% data.matrix() %>%
 
 # Site #
 Site <- data.spp$Covs %>%
-  select(prey, raptor) # , LOSH, NDVI
+  select(prey, LOSH, raptor, NDVI)
 X.add <- Site %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(Site)
@@ -116,14 +121,14 @@ Site.z <- Site.z %>% data.matrix() %>%
   array(., dim = c(dim(.), nDOS)) %>%
   aperm(c(1, 3, 2))
 
-X <- abind::abind(DOS, DOS2, temp.prec7, Veg.z, Veg2.z, VegCV.z, Ind.z, Site.z, along = 3)
+X <- abind::abind(DOS, DOS2, temp.min, temp.prec7, Veg.z, Veg2.z, VegCV.z, Ind.z, Site.z, along = 3)
 dimnames(X)[[3]] <- X.nams
 
-# Add shrub cover X height interaction #
-X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 1)))
-X.nams <- c(X.nams, "Max_Shrub_Height_5mXShrub_All_5m")
-dimnames(X)[[3]] <- X.nams
-X[,,"Max_Shrub_Height_5mXShrub_All_5m"] <- X[,,"Max_Shrub_Height_5m"]*X[,,"Shrub_All_5m"]
+# # Add shrub cover X height interaction #
+# X <- abind::abind(X, array(NA, dim = c(dim(X)[1:2], 1)))
+# X.nams <- c(X.nams, "Max_Shrub_Height_5mXShrub_All_5m")
+# dimnames(X)[[3]] <- X.nams
+# X[,,"Max_Shrub_Height_5mXShrub_All_5m"] <- X[,,"Max_Shrub_Height_5m"]*X[,,"Shrub_All_5m"]
 
 ncovs <- dim(X)[3]
 Y.alive <- (ymat == 1)*1

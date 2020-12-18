@@ -27,7 +27,7 @@ dat.trans <- read.csv("wintersurvival_accessDBs/ExportedTables/Transmisores_forI
 dat.banding <- dat.banding %>%
   mutate(Tagged = anillo %in% dat.trans$anillo)
 dat.veg <- read.csv("Veg_individual.csv", header = T, stringsAsFactors = F)
-dat.drone <- read.csv("Drone_individual.csv", header = T, stringsAsFactors = F)
+dat.drone <- read.csv("Drone_individual_noCM.csv", header = T, stringsAsFactors = F)
 
 # Convert all day of years to day of season #
 dat.banding$DOS <- dat.banding$DOY
@@ -66,7 +66,7 @@ D31 <- (dat.trans$fecha_recup %>% str_sub(-4, -1) %>% str_c("12/31/", .) %>% mdy
 dat.trans$DOSrecup[ind.afterD31] <- dat.trans$DOSrecup[ind.afterD31] + D31[ind.afterD31]
 rm(D31)
 
-# ***Temp fix mismatched species (remove after fixing in raw data)*** #
+# Fix mismatched species #
 dat.locations$especie[which(dat.locations$anillo == 272137988)] <- "GRSP"
 dat.trans$especie[which(dat.trans$anillo == 272137988)] <- "GRSP"
 

@@ -8,10 +8,10 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 
-vars.to.plot.DSR <- c("DOS", "temp.min")
-vars.quad.DSR <- c(T, F)
-vars.to.plot.PSR <- c("pastos", "Juniper_5m", "Juniper_500m", "Yucca_5m", "Mesquite_5m")
-vars.quad.PSR <- c(T, T, T, T, T)
+vars.to.plot.DSR <- c("DOS", "temp.min", "temp.prec7")
+vars.quad.DSR <- c(T, F, F)
+vars.to.plot.PSR <- c("Juniper_5m", "Juniper_500m", "Mesquite_5m")
+vars.quad.PSR <- c(T, T, T)
 
 spp.vec <- c("BAIS", "GRSP") # BAIS or GRSP
 mod.nam <- "ShrubSpp"

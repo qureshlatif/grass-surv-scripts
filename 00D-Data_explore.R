@@ -13,7 +13,7 @@ load("Data_compiled_MissingCovsImputed.RData")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 
-spp <- "BAIS" # BAIS or GRSP
+spp <- "GRSP" # BAIS or GRSP
 mod.nam <- "pre-analysis"
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
 

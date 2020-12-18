@@ -11,14 +11,12 @@ scripts.loc <- "grass-surv-scripts/"
 
 vars.to.plot.DSR <- c("DOS", "temp.min", "temp.prec7")
 vars.quad.DSR <- c(T, F, F)
-vars.to.plot.PSR <- c("hierbas", "hierba_ht", "pasto_ht", "otra", "Distance_to_Fence",
-                      "hierbas_cv", "otra_cv", "Shrub_All_5m", "Max_Shrub_Height_5m",
-                      "Shrub_All_5m_CV", "Shrub_All_50m_CV", "Shrub_All_500m_CV",
-                      "peso", "prey", "raptor")
-vars.quad.PSR <- c(T, T, T, T, F,
+vars.to.plot.PSR <- c("hierbas", "hierba_ht", "pastos", "pasto_ht", "salsola", "otra",
+                      "Distance_to_Fence", "hierbas_cv", "Shrub_All_5m", "Max_Shrub_Height_5m",
+                      "Shrub_All_5m_CV", "peso", "prey", "LOSH", "raptor", "NDVI")
+vars.quad.PSR <- c(T, T, T, T, T, T,
                    F, F, T, T,
-                   F, F, F,
-                   F, F, F)
+                   F, F, F, F, F, F)
 
 spp.vec <- c("BAIS", "GRSP")
 mod.nam <- "BigCheese"

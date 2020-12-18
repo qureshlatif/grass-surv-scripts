@@ -108,10 +108,10 @@ for(m in mods) {
   nsim <- dim(mod$sims.concat)[2]
   nsim.samp <- sample(nsim, 10000, replace = F)
   npar <- dim(mod$sims.concat)[1] - 2
-  ndays <- dim(X)[2]
-  nind <- dim(X)[1]
   spp <- str_sub(m, -4, -1)
   source("grass-surv-scripts/Data_processing_BigCheese.R")
+  ndays <- dim(X)[2]
+  nind <- dim(X)[1]
   DSR <- PSR07 <- PSR30 <- PSR60 <- PSR90 <- matrix(NA, nrow = length(nsim.samp), ncol = nind)
   for(i in 1:ncol(DSR)) {
     dsr <- matrix(NA, nrow = length(nsim.samp), ncol = ndays)

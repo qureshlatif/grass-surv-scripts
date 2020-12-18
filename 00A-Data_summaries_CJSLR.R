@@ -145,9 +145,10 @@ write.csv(sumTab, "Covariate_summaries_individual_GRSP.csv", row.names = F)
 ## Site-level covariate summaries ##
 load("Data_compiled_MissingCovsImputed.RData")
 dat.site %>%
-  select(Site, Season, LOSH, prey) %>%
+  select(Site, Season, LOSH, prey, NDVI) %>%
   mutate(LOSH = round(LOSH, digits = 2) %>% as.character(),
-         prey = round(prey, digits = 2) %>% as.character()) %>%
+         prey = round(prey, digits = 2) %>% as.character(),
+         NDVI = round(NDVI, digits = 2) %>% as.character()) %>%
   left_join(
     data.BAIS$Covs %>%
       select(Site, Season, hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,
@@ -191,9 +192,10 @@ dat.site %>%
   write.csv("Covariate_summaries_site_BAIS.csv")
 
 dat.site %>%
-  select(Site, Season, LOSH, prey) %>%
+  select(Site, Season, LOSH, prey, NDVI) %>%
   mutate(LOSH = round(LOSH, digits = 2) %>% as.character(),
-         prey = round(prey, digits = 2) %>% as.character()) %>%
+         prey = round(prey, digits = 2) %>% as.character(),
+         NDVI = round(NDVI, digits = 2) %>% as.character()) %>%
   left_join(
     data.GRSP$Covs %>%
       select(Site, Season, hierbas, hierbas_cv, pastos, pasto_ht_cv, salsola, otra, otra_cv,

@@ -8,11 +8,10 @@ library(tictoc)
 
 setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 
-load("Data_compiled.RData")
-#load("Data_compiled_2018.RData")
+load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
 spp <- "BAIS" # BAIS or GRSP
-mod.nam <- "ShrubSpp"
+mod.nam <- "BigCheese"
 chain <- 1 # If running parallel chains
 save.out <- str_c("mod_mcmcR_", mod.nam, "_", spp)
 

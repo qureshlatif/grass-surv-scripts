@@ -107,7 +107,7 @@ Ind.z <- Ind.z %>% data.matrix() %>%
 
 # Site #
 Site <- data.spp$Covs %>%
-  select(prey, LOSH, raptor) # NDVI
+  select(prey, LOSH, raptor, NDVI)
 X.add <- Site %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(Site)
