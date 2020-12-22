@@ -69,7 +69,7 @@ Veg.z <- Veg.z %>% data.matrix() %>%
 Veg2.z <- Veg.z[,,-dim(Veg.z)[3]] ^ 2
 
 VegCV <- data.spp$Covs %>%
-  select(hierbas_cv, Shrub_All_5m_CV)
+  select(hierbas_cv, otra_cv, Shrub_All_5m_CV)
 X.add <- VegCV %>%
   summarise_all(function(x) mean(x, na.rm = T)) %>% data.matrix() %>% as.numeric()
 names(X.add) <- names(VegCV)

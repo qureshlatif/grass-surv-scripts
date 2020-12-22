@@ -78,20 +78,65 @@ for(sp in c("BAIS", "GRSP")) {
 
 write.csv(out, "Mod_estimates_SiteXSeason_Transmitter.csv", row.names = T)
 
-# Transmitter effect #
-rows <- c("DSR.pre", "DSR.post", "PSR.pre", "PSR.post")
-cols <- c("BAIS", "GRSP")
-out <- matrix(NA, nrow = length(rows), ncol = length(cols),
+# # Transmitter effect #
+# rows <- c("DSR.pre", "DSR.post", "PSR.pre", "PSR.post")
+# cols <- c("BAIS", "GRSP")
+# out <- matrix(NA, nrow = length(rows), ncol = length(cols),
+#               dimnames = list(rows, cols))
+# 
+# for(sp in c("BAIS", "GRSP")) {
+#   mod <- eval(as.name(str_c("mod.", sp)))
+#   DSR <- QSLpersonal::expit(mod$sims.list$B0.mean + mod$sims.list$B.trans)
+#   out["DSR.pre", sp] <- sum.fn(DSR, ndig = 3)
+#   out["PSR.pre", sp] <- sum.fn(DSR^90)
+#   DSR <- QSLpersonal::expit(mod$sims.list$B0.mean)
+#   out["DSR.post", sp] <- sum.fn(DSR, ndig = 3)
+#   out["PSR.post", sp] <- sum.fn(DSR^90)
+# }
+# 
+# write.csv(out, "Surv_estimates_Transmitter.csv", row.names = T)
+
+load("Data_compiled_MissingCovsImputed.RData")
+rows <- c("Daily_pre", "Daily_post", "90-day_pre", "90-day_post")
+out <- matrix("", nrow = length(rows), ncol = length(cols),
               dimnames = list(rows, cols))
 
-for(sp in c("BAIS", "GRSP")) {
-  mod <- eval(as.name(str_c("mod.", sp)))
-  DSR <- QSLpersonal::expit(mod$sims.list$B0.mean + mod$sims.list$B.trans)
-  out["DSR.pre", sp] <- sum.fn(DSR, ndig = 3)
-  out["PSR.pre", sp] <- sum.fn(DSR^90)
-  DSR <- QSLpersonal::expit(mod$sims.list$B0.mean)
-  out["DSR.post", sp] <- sum.fn(DSR, ndig = 3)
-  out["PSR.post", sp] <- sum.fn(DSR^90)
+for(spp in cols) {
+  mod <- eval(as.name(str_c("mod.", spp)))
+  nsim <- dim(mod$sims.list$B)[1]
+  npar <- dim(mod$sims.list$B)[2]
+  source("grass-surv-scripts/Data_processing_JAGS.R")
+  ndays <- dim(X)[2]
+  nind <- dim(X)[1]
+  DSR_pre <- DSR_post <- PSR90_pre <- PSR90_post <- matrix(NA, nrow = nsim, ncol = nind)
+  for(i in 1:ncol(DSR_pre)) {
+    dsr_pre <- dsr_post <- matrix(NA, nrow = nsim, ncol = ndays)
+    for(t in 1:ndays) {
+      x <- X[i,t,] %>% array(dim = c(nsim, npar))
+      dsr_pre[, t] <- QSLpersonal::expit(mod$sims.list$B0.mean + mod$sims.list$B.trans + apply(mod$sims.list$B * x, 1, sum))
+      dsr_post[, t] <- QSLpersonal::expit(mod$sims.list$B0.mean + apply(mod$sims.list$B * x, 1, sum))
+    }
+    DSR_pre[,i] <- apply(dsr_pre, 1, mean)
+    DSR_post[,i] <- apply(dsr_post, 1, mean)
+    PSR90_pre[,i] <- apply(dsr_pre, 1, function(x) {
+      st <- 1:(ndays-89)
+      end <- 90:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+    PSR90_post[,i] <- apply(dsr_post, 1, function(x) {
+      st <- 1:(ndays-89)
+      end <- 90:ndays
+      xind <- sample(1:length(st), 1)
+      psr <- prod(x[st[xind]:end[xind]])
+      return(psr)
+    })
+  }
+  out["Daily_pre", spp] <- sum.fn(apply(DSR_pre, 1, mean), ndig = 3)
+  out["Daily_post", spp] <- sum.fn(apply(DSR_post, 1, mean), ndig = 3)
+  out["90-day_pre", spp] <- sum.fn(apply(PSR90_pre, 1, mean))
+  out["90-day_post", spp] <- sum.fn(apply(PSR90_post, 1, mean))
 }
 
 write.csv(out, "Surv_estimates_Transmitter.csv", row.names = T)

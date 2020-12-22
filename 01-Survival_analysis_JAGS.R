@@ -7,7 +7,7 @@ setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
-spp <- "BAIS" # BAIS or GRSP
+spp <- "GRSP" # BAIS or GRSP
 mod.nam <- "JAGS"
 scripts.loc <- "grass-surv-scripts/"
 saveJAGS.loc <- "saveJAGS/"
@@ -30,7 +30,7 @@ data.nams <- c("Y.alive", "Y.dead", "first", "last",
                "DOSdepl", "time_since_depl", "after_depl")
 
 # Stuff to save from JAGS
-parameters <- c("B0.mean", "B0.sd", "B0", "B", "B.trans", "P.trans", "p", "psi", "z")
+parameters <- c("B0.mean", "B0.sd", "B0", "B", "B.trans", "P.trans", "p", "psi")
 
 # Compile data #
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
@@ -63,7 +63,9 @@ mod.raw <- combineSaves(rsav, burnFiles = 5, thin = 10)
 #Rhat <- gelman.diag(mod.raw)$psrf[, 2]
 #neff <- effectiveSize(mod.raw)
 mod <- mcmcOutput(mod.raw)
-sumTab <- summary(mod, MCEpc = F, n.eff = T, f = T, overlap0 = T, verbose = F)
+sumTab <- summary(mod, MCEpc = F, n.eff = T, f = T, overlap0 = T, verbose = F) %>%
+  data.matrix()
+if(any(str_sub(dimnames(sumTab)[[1]], 1, 2) == "z[")) sumTab <- sumTab[-which(str_sub(dimnames(sumTab)[[1]], 1, 2) == "z["),]
 mod <- list(mcmcOutput = mod, sims.list = simsList(mod.raw), summary = sumTab)
 
 # Check the basics
@@ -72,7 +74,7 @@ mod <- list(mcmcOutput = mod, sims.list = simsList(mod.raw), summary = sumTab)
 #sort(Rhat, decreasing = T)
 #traceplot(mod.raw[, "B.drone[4]"])
 #max(mod$summary[, "Rhat"], na.rm = T)
-max(mod$summary[-which(str_sub(dimnames(mod$summary)[[1]], 1, 2) == "z["), "Rhat"], na.rm = T)
+max(mod$summary[, "Rhat"], na.rm = T)
 #mod$summary[which(round(mod$summary[, "Rhat"], digits = 1) > 1.1), ]
 
 #min(out$summary[,"n.eff"])

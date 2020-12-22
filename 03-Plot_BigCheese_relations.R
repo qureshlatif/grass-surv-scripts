@@ -198,11 +198,36 @@ p.otra.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  ylim(0, 1) +
+  scale_y_continuous(limits = c(0, 0.8), breaks = c(0, 0.4, 0.8)) +
+  #ylim(0, 0.8) +
   labs(color = "Species") +
   theme(legend.position = c(0,1), legend.justification = c(0,1)) +
   guides(color = F, fill = F, linetype = F) +
-  xlab("Other cover 5m (%)") + ylab(NULL)
+  xlab("Litter 5m (%)") + ylab(NULL)
+
+# CV Other cover #
+supp <- c(F, T)
+fill.spp <- ifelse(supp, colors.spp, "white")
+linetype.spp <- ifelse(supp, "solid", "dashed")
+dat.plot <- dat.plot.otra_cv.BAIS %>%
+  mutate(spp = "BAIS") %>%
+  bind_rows(dat.plot.otra_cv.GRSP %>%
+              mutate(spp = "GRSP")) %>%
+  mutate(spp = factor(spp, levels = c("BAIS", "GRSP"))) %>%
+  mutate(x = x * 100)
+p.otra_cv.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
+  geom_ribbon(aes(ymin = PSR.lo, ymax = PSR.hi, fill = spp, color = spp, linetype = spp),
+              alpha = 0.3) +
+  geom_line(aes(color = spp), size = 1) +
+  scale_color_manual(values = colors.spp) +
+  scale_fill_manual(values = fill.spp) +
+  scale_linetype_manual(values = linetype.spp) +
+  scale_y_continuous(limits = c(0, 0.8), breaks = c(0, 0.4, 0.8)) +
+  #ylim(0, 0.8) +
+  labs(color = "Species") +
+  theme(legend.position = c(0,1), legend.justification = c(0,1)) +
+  guides(color = F, fill = F, linetype = F) +
+  xlab("CV litter 5m (%)") + ylab(NULL)
 
 # Forb cover CV #
 supp <- c(T, T)
@@ -408,25 +433,26 @@ p.NDVI.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
 
 # Put everything together
 p <- ggdraw() +
-  draw_plot(p.hierbas.PSR,             x = 0,    y = 0.75, width = 0.25, height = 0.25) +
-  draw_plot(p.hierba_ht.PSR,           x = 0.25, y = 0.75, width = 0.25, height = 0.25) +
-  draw_plot(p.hierbas_cv.PSR,          x = 0.5,  y = 0.75, width = 0.25, height = 0.25) +
-  draw_plot(p.pastos.PSR,              x = 0.75, y = 0.75, width = 0.25, height = 0.25) +
+  draw_plot(p.hierbas.PSR,             x = 0,    y = 0.75,  width = 0.25, height = 0.25) +
+  draw_plot(p.hierba_ht.PSR,           x = 0.25, y = 0.75,  width = 0.25, height = 0.25) +
+  draw_plot(p.hierbas_cv.PSR,          x = 0.5,  y = 0.75,  width = 0.25, height = 0.25) +
+  draw_plot(p.pastos.PSR,              x = 0.75, y = 0.75,  width = 0.25, height = 0.25) +
   
-  draw_plot(p.pasto_ht.PSR,            x = 0,    y = 0.5,  width = 0.25, height = 0.25) +
-  draw_plot(p.otra.PSR,                x = 0.25, y = 0.5,  width = 0.25, height = 0.25) +
-  draw_plot(p.salsola.PSR,             x = 0.5,  y = 0.5,  width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_5m.PSR,        x = 0.75, y = 0.5,  width = 0.25, height = 0.25) +
+  draw_plot(p.pasto_ht.PSR,            x = 0,    y = 0.5,   width = 0.25, height = 0.25) +
+  draw_plot(p.otra.PSR,                x = 0.25, y = 0.625, width = 0.25, height = 0.125) +
+  draw_plot(p.otra_cv.PSR,             x = 0.25, y = 0.5,   width = 0.25, height = 0.125) +
+  draw_plot(p.salsola.PSR,             x = 0.5,  y = 0.5,   width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_5m.PSR,        x = 0.75, y = 0.5,   width = 0.25, height = 0.25) +
   
-  draw_plot(p.Max_Shrub_Height_5m.PSR, x = 0,    y = 0.25, width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_5m_CV.PSR,     x = 0.25, y = 0.25, width = 0.25, height = 0.25) +
-  draw_plot(p.Distance_to_Fence.PSR,   x = 0.5,  y = 0.25, width = 0.25, height = 0.25) +
-  draw_plot(p.peso.PSR,                x = 0.75, y = 0.25, width = 0.25, height = 0.25) +
+  draw_plot(p.Max_Shrub_Height_5m.PSR, x = 0,    y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_5m_CV.PSR,     x = 0.25, y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Distance_to_Fence.PSR,   x = 0.5,  y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.peso.PSR,                x = 0.75, y = 0.25,  width = 0.25, height = 0.25) +
   
-  draw_plot(p.prey.PSR,                x = 0,    y = 0,    width = 0.25, height = 0.25) +
-  draw_plot(p.LOSH.PSR,                x = 0.25, y = 0,    width = 0.25, height = 0.25) +
-  draw_plot(p.raptor.PSR,              x = 0.5,  y = 0,    width = 0.25, height = 0.25) +
-  draw_plot(p.NDVI.PSR,                x = 0.75, y = 0,    width = 0.25, height = 0.25)
+  draw_plot(p.prey.PSR,                x = 0,    y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.LOSH.PSR,                x = 0.25, y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.raptor.PSR,              x = 0.5,  y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.NDVI.PSR,                x = 0.75, y = 0,     width = 0.25, height = 0.25)
 p <- ggdraw() +
   draw_plot(p, x = 0.05, y = 0, width = 0.95, height = 1) +
   draw_plot_label("Survival over 90 days", x = 0, y = 0.4, angle = 90, hjust = 0, size = 20)
