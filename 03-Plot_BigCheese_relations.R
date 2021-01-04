@@ -139,7 +139,7 @@ p.pastos.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_linetype_manual(values = linetype.spp) +
   ylim(0, 1) +
   guides(color = F, fill = F, linetype = F) +
-  xlab("Grass cover 5m (cm)") + ylab(NULL)
+  xlab("Grass cover 5m (%)") + ylab(NULL)
 
 # Grass height #
 supp <- c(T, F)
@@ -198,12 +198,11 @@ p.otra.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  scale_y_continuous(limits = c(0, 0.8), breaks = c(0, 0.4, 0.8)) +
-  #ylim(0, 0.8) +
+  ylim(0, 1) +
   labs(color = "Species") +
   theme(legend.position = c(0,1), legend.justification = c(0,1)) +
   guides(color = F, fill = F, linetype = F) +
-  xlab("Litter 5m (%)") + ylab(NULL)
+  xlab("Other cover 5m (%)") + ylab(NULL)
 
 # CV Other cover #
 supp <- c(F, T)
@@ -222,12 +221,11 @@ p.otra_cv.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  scale_y_continuous(limits = c(0, 0.8), breaks = c(0, 0.4, 0.8)) +
-  #ylim(0, 0.8) +
+  ylim(0, 1) +
   labs(color = "Species") +
   theme(legend.position = c(0,1), legend.justification = c(0,1)) +
   guides(color = F, fill = F, linetype = F) +
-  xlab("CV litter 5m (%)") + ylab(NULL)
+  xlab("CV other cover 5m (%)") + ylab(NULL)
 
 # Forb cover CV #
 supp <- c(T, T)
@@ -381,9 +379,7 @@ p.LOSH.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  ylim(0, 1) +
-  #labs(color = "Species") +
-  #theme(legend.position = c(0,1), legend.justification = c(0,1)) +
+  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.25, 0.5)) +
   guides(color = F, fill = F, linetype = F) +
   xlab(expression('Shrike density (per '*km^2*')')) + ylab(NULL)
 
@@ -403,9 +399,7 @@ p.raptor.PSR <- ggplot(dat.plot, aes(x = x, y = PSR.md)) +
   scale_color_manual(values = colors.spp) +
   scale_fill_manual(values = fill.spp) +
   scale_linetype_manual(values = linetype.spp) +
-  ylim(0, 1) +
-  #labs(color = "Species") +
-  #theme(legend.position = c(0,1), legend.justification = c(0,1)) +
+  scale_y_continuous(limits = c(0, 0.5), breaks = c(0, 0.25, 0.5)) +
   guides(color = F, fill = F, linetype = F) +
   xlab(expression('Raptor density (per '*km^2*')')) + ylab(NULL)
 
@@ -439,19 +433,19 @@ p <- ggdraw() +
   draw_plot(p.pastos.PSR,              x = 0.75, y = 0.75,  width = 0.25, height = 0.25) +
   
   draw_plot(p.pasto_ht.PSR,            x = 0,    y = 0.5,   width = 0.25, height = 0.25) +
-  draw_plot(p.otra.PSR,                x = 0.25, y = 0.625, width = 0.25, height = 0.125) +
-  draw_plot(p.otra_cv.PSR,             x = 0.25, y = 0.5,   width = 0.25, height = 0.125) +
-  draw_plot(p.salsola.PSR,             x = 0.5,  y = 0.5,   width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_5m.PSR,        x = 0.75, y = 0.5,   width = 0.25, height = 0.25) +
+  draw_plot(p.otra.PSR,                x = 0.25, y = 0.5,   width = 0.25, height = 0.25) +
+  draw_plot(p.otra_cv.PSR,             x = 0.5,  y = 0.5,   width = 0.25, height = 0.25) +
+  draw_plot(p.salsola.PSR,             x = 0.75, y = 0.5,   width = 0.24, height = 0.25) +
   
-  draw_plot(p.Max_Shrub_Height_5m.PSR, x = 0,    y = 0.25,  width = 0.25, height = 0.25) +
-  draw_plot(p.Shrub_All_5m_CV.PSR,     x = 0.25, y = 0.25,  width = 0.25, height = 0.25) +
-  draw_plot(p.Distance_to_Fence.PSR,   x = 0.5,  y = 0.25,  width = 0.25, height = 0.25) +
-  draw_plot(p.peso.PSR,                x = 0.75, y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_5m.PSR,        x = 0,    y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Max_Shrub_Height_5m.PSR, x = 0.25, y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Shrub_All_5m_CV.PSR,     x = 0.5,  y = 0.25,  width = 0.25, height = 0.25) +
+  draw_plot(p.Distance_to_Fence.PSR,   x = 0.75, y = 0.25,  width = 0.25, height = 0.25) +
   
-  draw_plot(p.prey.PSR,                x = 0,    y = 0,     width = 0.25, height = 0.25) +
-  draw_plot(p.LOSH.PSR,                x = 0.25, y = 0,     width = 0.25, height = 0.25) +
-  draw_plot(p.raptor.PSR,              x = 0.5,  y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.peso.PSR,                x = 0,    y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.prey.PSR,                x = 0.25, y = 0,     width = 0.25, height = 0.25) +
+  draw_plot(p.LOSH.PSR,                x = 0.5,  y = 0.125, width = 0.25, height = 0.125) +
+  draw_plot(p.raptor.PSR,              x = 0.5,  y = 0,     width = 0.25, height = 0.125) +
   draw_plot(p.NDVI.PSR,                x = 0.75, y = 0,     width = 0.25, height = 0.25)
 p <- ggdraw() +
   draw_plot(p, x = 0.05, y = 0, width = 0.95, height = 1) +

@@ -1,3 +1,6 @@
+#***12/23/2020 Note: If these plots are desired, the script would need to be revised to average across individuals within each site and season
+  #rather than simply plugging in mean covariate values.***
+
 library(R.utils)
 library(tidyverse)
 library(cowplot)

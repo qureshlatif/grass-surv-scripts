@@ -59,7 +59,7 @@ rm(st.time,end.time)
 
 # Gather, combine, and summarize JAGS saves from hard drive #
 rsav <- recoverSaves(str_c(saveJAGS.loc, save.out, "/modsave"))
-mod.raw <- combineSaves(rsav, burnFiles = 5, thin = 10)
+mod.raw <- combineSaves(rsav, burnFiles = 1, thin = 5)
 #Rhat <- gelman.diag(mod.raw)$psrf[, 2]
 #neff <- effectiveSize(mod.raw)
 mod <- mcmcOutput(mod.raw)
@@ -83,31 +83,31 @@ max(mod$summary[, "Rhat"], na.rm = T)
 min(mod$summary[, "n.eff"], na.rm = T)
 #sort(mod$summary[, "n.eff"])[1:50]
 
-# # traceplots (***not sure this will work if z's are saved and included.) #
-# pdf(file=str_c(save.out, '_traceplots.pdf'))
-# plot.params <- params.saved <- parameters
-# for(i in 1:length(plot.params)) {
-#   par.i <- plot.params[i]
-#   pars.lst <- params.saved[which(substring(params.saved,1,nchar(par.i))==par.i)]
-#   pars.cols <- c()
-#   for(j in 1:length(pars.lst)) {
-#     pars.cols <- c(pars.cols,which(substring(colnames(mod.raw$AA),1,nchar(pars.lst[j]))==pars.lst[j]))
-#   }
-#   
-#   if(length(pars.cols)<=9) {
-#     par(mfrow=c(ceiling(sqrt(length(pars.cols))),ceiling(sqrt(length(pars.cols)))),xpd=NA,mar=c(5,4,1,1))
-#     for(j in pars.cols) {
-#       matplot(cbind(mod.raw$AA[,j],mod.raw$AB[,j],mod.raw$AC[,j]),type='l',lty=1,ylab=colnames(mod.raw$AA)[j])
-#     }
-#   }
-#   if(length(pars.cols)>9) {
-#     for(j in 1:length(pars.cols)) {
-#       if((j-1)%%9==0) {par(mfrow=c(3,3),xpd=NA,mar=c(5,4,1,1))}
-#       matplot(cbind(mod.raw$AA[,pars.cols[j]],mod.raw$AB[,pars.cols[j]],mod.raw$AC[,pars.cols[j]]),type='l',lty=1,ylab=colnames(mod.raw$AA)[pars.cols[j]])
-#     }
-#   }
-# }
-# dev.off()
+# traceplots (***not sure this will work if z's are saved and included.) #
+pdf(file=str_c(save.out, '_traceplots.pdf'))
+plot.params <- params.saved <- parameters
+for(i in 1:length(plot.params)) {
+  par.i <- plot.params[i]
+  pars.lst <- params.saved[which(substring(params.saved,1,nchar(par.i))==par.i)]
+  pars.cols <- c()
+  for(j in 1:length(pars.lst)) {
+    pars.cols <- c(pars.cols,which(substring(colnames(mod.raw$AA),1,nchar(pars.lst[j]))==pars.lst[j]))
+  }
+
+  if(length(pars.cols)<=9) {
+    par(mfrow=c(ceiling(sqrt(length(pars.cols))),ceiling(sqrt(length(pars.cols)))),xpd=NA,mar=c(5,4,1,1))
+    for(j in pars.cols) {
+      matplot(cbind(mod.raw$AA[,j],mod.raw$AB[,j],mod.raw$AC[,j]),type='l',lty=1,ylab=colnames(mod.raw$AA)[j])
+    }
+  }
+  if(length(pars.cols)>9) {
+    for(j in 1:length(pars.cols)) {
+      if((j-1)%%9==0) {par(mfrow=c(3,3),xpd=NA,mar=c(5,4,1,1))}
+      matplot(cbind(mod.raw$AA[,pars.cols[j]],mod.raw$AB[,pars.cols[j]],mod.raw$AC[,pars.cols[j]]),type='l',lty=1,ylab=colnames(mod.raw$AA)[pars.cols[j]])
+    }
+  }
+}
+dev.off()
 
 # Save output
 library(R.utils)

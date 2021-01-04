@@ -12,7 +12,7 @@ scripts.loc <- "grass-surv-scripts/"
 # Baird's Sparrow #
 ###################
 
-## Plot predictions ##
+## Plot siteXseason estimates after accounting for covariate effects (i.e., with mean covariate effects averaged across sites and seasons) ##
 
 spp <- "BAIS" # BAIS or GRSP
 source(str_c(scripts.loc, "Data_processing_BigCheese.R"))
@@ -23,7 +23,7 @@ dimnames(X)[[3]] <- X.nams
 modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter", "_", spp))
 Site_Season <- str_c(data.spp$Covs$Site, data.spp$Covs$Season, sep = "_")
 
-#_Calculate offset (run once and cache)_#
+# #_Calculate offset (run once and cache)_#
 # nind <- dim(X)[1]
 # nday <- dim(X)[2]
 # nsim <- dim(modSS$sims.list$B)[1]
@@ -37,7 +37,7 @@ Site_Season <- str_c(data.spp$Covs$Site, data.spp$Covs$Season, sep = "_")
 # }
 # BX <- BX / nind
 # saveObject(BX, str_c("BX_offset_SiteSeasonPlots_", spp))
-#_______________________________________#
+# #_______________________________________#
 BX <- loadObject(str_c("BX_offset_SiteSeasonPlots_", spp))
 
 SeasonRef <- data.spp$Covs %>% select(Season, SeasonInd) %>% unique %>% arrange(SeasonInd)
@@ -163,5 +163,5 @@ p <- ggdraw() +
                   x = c(0.15, 0.65, 0), y = c(0.97, 0.97, 0.5), size = c(15, 15, 25),
                   hjust = c(0.5, 0.5, 0.5), angle = c(0, 0, 90))
 
-save_plot("Figure_SiteXYear_Rates_abridged.jpg", p, ncol = 3.8, nrow = 1.5, dpi = 600)
+save_plot("Figure_SiteXYear_Rates.jpg", p, ncol = 3.8, nrow = 1.5, dpi = 600)
 
