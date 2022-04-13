@@ -4,9 +4,11 @@ library(cowplot)
 library(QSLpersonal)
 theme_set(theme_cowplot())
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
+chop.init <- 8
+chop.CUZA1516 <- F
 
 ###################
 # Baird's Sparrow #
@@ -20,39 +22,40 @@ st <- 1:(J-89)
 end <- 90:J
 source(str_c("grass-surv-scripts/Data_processing_JAGS.r"))
 dimnames(X)[[3]] <- X.nams
-modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter", "_", spp))
-Site_Season <- str_c(data.spp$Covs$Site, data.spp$Covs$Season, sep = "_")
+modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_covs", "_", spp))
 
-# #_Calculate offset (run once and cache)_#
-# nind <- dim(X)[1]
-# nday <- dim(X)[2]
-# nsim <- dim(modSS$sims.list$B)[1]
-# BX <- matrix(0, nrow = nsim, ncol = nday)
-# B <- modSS$sims.list$B
-# B <- B %>% array(dim = c(dim(B), dim(X)[2])) %>% aperm(c(1, 3, 2))
-# for(i in 1:nind) {
-#   x <- X[i,,]
-#   x.arr <- x %>% array(dim = c(dim(x), nsim)) %>% aperm(c(3, 1, 2))
-#   BX <- BX + apply(B * x.arr, c(1, 2), sum)
-# }
-# BX <- BX / nind
-# saveObject(BX, str_c("BX_offset_SiteSeasonPlots_", spp))
-# #_______________________________________#
+#_Calculate offset (run once and cache)_#
+nind <- dim(X)[1]
+nday <- dim(X)[2]
+nsim <- dim(modSS$sims.list$B)[1]
+BX <- matrix(0, nrow = nsim, ncol = nday)
+B <- modSS$sims.list$B
+B <- B %>% array(dim = c(dim(B), dim(X)[2])) %>% aperm(c(1, 3, 2))
+for(i in 1:nind) {
+  x <- X[i,,]
+  x.arr <- x %>% array(dim = c(dim(x), nsim)) %>% aperm(c(3, 1, 2))
+  BX <- BX + apply(B * x.arr, c(1, 2), sum)
+}
+BX <- BX / nind
+saveObject(BX, str_c("BX_offset_SiteSeasonPlots_", spp))
+#_______________________________________#
 BX <- loadObject(str_c("BX_offset_SiteSeasonPlots_", spp))
 
-SeasonRef <- data.spp$Covs %>% select(Season, SeasonInd) %>% unique %>% arrange(SeasonInd)
-SiteRef <- data.spp$Covs %>% select(Site, SiteInd) %>% unique %>% arrange(SiteInd)
+SeasonRef <- data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Season, SeasonInd) %>%
+  unique %>% arrange(SeasonInd)
+SiteRef <- data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Site, SiteInd) %>%
+  unique %>% arrange(SiteInd)
 
 dat.plot <- SiteSeasons %>%
   left_join(
-    data.spp$Covs %>% select(Site, Season) %>%
+    data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Site, Season) %>%
       dplyr::group_by(Site, Season) %>%
       summarise(n = n()),
     by = c("Site", "Season")
   ) %>%
-  mutate(PSR.est = NA,
-         PSR.est.lo = NA,
-         PSR.est.hi = NA)
+  mutate(PSR.est = as.numeric(NA),
+         PSR.est.lo = as.numeric(NA),
+         PSR.est.hi = as.numeric(NA))
 
 for(j in 1:nrow(SiteRef)) for(t in 1:nrow(SeasonRef)) {
   row.ind <- which(dat.plot$Season == SeasonRef$Season[t] & dat.plot$Site == SiteRef$Site[j])
@@ -62,7 +65,7 @@ for(j in 1:nrow(SiteRef)) for(t in 1:nrow(SeasonRef)) {
     for(d in 1:J) DSR[,d] <- expit(B0 + BX[,d])
     PSR <- apply(DSR, 1, function(x) {
       v <- numeric(length = length(st))
-      for(j in 1:length(st)) v[j] <- prod(x[st[j]:end[j]])
+      for(k in 1:length(st)) v[k] <- prod(x[st[k]:end[k]])
       return(mean(v))
     })
     dat.plot[row.ind, "PSR.est"] <- median(PSR)
@@ -95,38 +98,40 @@ st <- 1:(J-89)
 end <- 90:J
 source(str_c("grass-surv-scripts/Data_processing_JAGS.r"))
 dimnames(X)[[3]] <- X.nams
-modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_Transmitter", "_", spp))
-Site_Season <- str_c(data.spp$Covs$Site, data.spp$Covs$Season, sep = "_")
+modSS <- loadObject(str_c("mod_CJSRL_SiteXSeason_covs", "_", spp))
+
 #_Calculate offset (run once and cache)_#
-# nind <- dim(X)[1]
-# nday <- dim(X)[2]
-# nsim <- dim(modSS$sims.list$B)[1]
-# BX <- matrix(0, nrow = nsim, ncol = nday)
-# B <- modSS$sims.list$B
-# B <- B %>% array(dim = c(dim(B), dim(X)[2])) %>% aperm(c(1, 3, 2))
-# for(i in 1:nind) {
-#   x <- X[i,,]
-#   x.arr <- x %>% array(dim = c(dim(x), nsim)) %>% aperm(c(3, 1, 2))
-#   BX <- BX + apply(B * x.arr, c(1, 2), sum)
-# }
-# BX <- BX / nind
-# saveObject(BX, str_c("BX_offset_SiteSeasonPlots_", spp))
+nind <- dim(X)[1]
+nday <- dim(X)[2]
+nsim <- dim(modSS$sims.list$B)[1]
+BX <- matrix(0, nrow = nsim, ncol = nday)
+B <- modSS$sims.list$B
+B <- B %>% array(dim = c(dim(B), dim(X)[2])) %>% aperm(c(1, 3, 2))
+for(i in 1:nind) {
+  x <- X[i,,]
+  x.arr <- x %>% array(dim = c(dim(x), nsim)) %>% aperm(c(3, 1, 2))
+  BX <- BX + apply(B * x.arr, c(1, 2), sum)
+}
+BX <- BX / nind
+saveObject(BX, str_c("BX_offset_SiteSeasonPlots_", spp))
 #_______________________________________#
 BX <- loadObject(str_c("BX_offset_SiteSeasonPlots_", spp))
 
-SeasonRef <- data.spp$Covs %>% select(Season, SeasonInd) %>% unique %>% arrange(SeasonInd)
-SiteRef <- data.spp$Covs %>% select(Site, SiteInd) %>% unique %>% arrange(SiteInd)
+SeasonRef <- data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Season, SeasonInd) %>%
+  unique %>% arrange(SeasonInd)
+SiteRef <- data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Site, SiteInd) %>%
+  unique %>% arrange(SiteInd)
 
 dat.plot <- SiteSeasons %>%
   left_join(
-    data.spp$Covs %>% select(Site, Season) %>%
+    data.spp$Covs %>% slice(-ind.rows.chop) %>% select(Site, Season) %>%
       dplyr::group_by(Site, Season) %>%
       summarise(n = n()),
     by = c("Site", "Season")
   ) %>%
-  mutate(PSR.est = NA,
-         PSR.est.lo = NA,
-         PSR.est.hi = NA)
+  mutate(PSR.est = as.numeric(NA),
+         PSR.est.lo = as.numeric(NA),
+         PSR.est.hi = as.numeric(NA))
 
 for(j in 1:nrow(SiteRef)) for(t in 1:nrow(SeasonRef)) {
   row.ind <- which(dat.plot$Season == SeasonRef$Season[t] & dat.plot$Site == SiteRef$Site[j])
@@ -136,7 +141,7 @@ for(j in 1:nrow(SiteRef)) for(t in 1:nrow(SeasonRef)) {
     for(d in 1:J) DSR[,d] <- expit(B0 + BX[,d])
     PSR <- apply(DSR, 1, function(x) {
       v <- numeric(length = length(st))
-      for(j in 1:length(st)) v[j] <- prod(x[st[j]:end[j]])
+      for(k in 1:length(st)) v[k] <- prod(x[st[k]:end[k]])
       return(mean(v))
     })
     dat.plot[row.ind, "PSR.est"] <- median(PSR)
@@ -163,5 +168,5 @@ p <- ggdraw() +
                   x = c(0.15, 0.65, 0), y = c(0.97, 0.97, 0.5), size = c(15, 15, 25),
                   hjust = c(0.5, 0.5, 0.5), angle = c(0, 0, 90))
 
-save_plot("Figure_SiteXYear_Rates.jpg", p, ncol = 3.8, nrow = 1.5, dpi = 600)
+save_plot("Figure_SiteXYear_Rates.jpg", p, ncol = 2.5, nrow = 2, dpi = 600)
 

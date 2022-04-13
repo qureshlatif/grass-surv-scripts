@@ -2,9 +2,33 @@ library(tidyverse)
 library(QSLpersonal)
 library(corrplot)
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
-load("Data_compiled_MissingCovsImputed.RData")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
+#load("Data_compiled_MissingCovsImputed.RData")
 #load("Data_compiled.RData")
+
+##############################################################
+# Correlations after truncating first 8 days post-deployment #
+##############################################################
+
+load("Data_compiled_MissingCovsImputed.RData")
+scripts.loc <- "grass-surv-scripts/"
+chop.init <- 8
+
+spp <- "GRSP" # BAIS or GRSP
+mod.nam <- "BigCheese"
+source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
+
+X.mat <- matrix(X, prod(dim(X)[1:2]), dim(X)[3])
+dimnames(X.mat)[[2]] <- X.nams
+X.mat[,-1] %>% cor(use = "complete") %>%
+  write.csv(str_c("Correlations_", mod.nam, "_", spp, "_post-chop8.csv"))
+#write.csv("Correlations_veg_BAIS_fillData.csv")
+
+pdf(str_c("Correlations_", mod.nam, "_", spp, "_post-chop8.pdf"))
+#pdf("Correlations_veg_BAIS_fillData.pdf")
+X.mat[,-1] %>% cor(use = "complete") %>%
+  corrplot(method = "ellipse", addCoefasPercent = T, diag = F, tl.cex = 0.5)
+dev.off()
 
 ###############################################################################
 # Explore and tabulate correlations among all variables selected for analysis #
@@ -12,8 +36,9 @@ load("Data_compiled_MissingCovsImputed.RData")
 
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
+chop.init <- NULL
 
-spp <- "GRSP" # BAIS or GRSP
+spp <- "BAIS" # BAIS or GRSP
 mod.nam <- "pre-analysis"
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
 

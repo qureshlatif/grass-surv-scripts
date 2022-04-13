@@ -2,12 +2,12 @@ library(nimble)
 library(stringr)
 library(dplyr)
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
 spp <- "BAIS" # BAIS or GRSP
-source("grass-surv-scripts/model_CJSRLHomog_Dot.nimble")
+source("grass-surv-scripts/archive/model_CJSRLHomog_Dot.nimble")
 
 # MCMC values
 nc <- 3 # number of chains

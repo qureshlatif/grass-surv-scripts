@@ -3,41 +3,52 @@ library(saveJAGS)
 library(stringr)
 library(dplyr)
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
 load("Data_compiled_MissingCovsImputed.RData")
 
 #________ Script inputs________#
-spp <- "GRSP" # BAIS or GRSP
+spp <- "BAIS" # BAIS or GRSP
 mod.nam <- "JAGS"
 scripts.loc <- "grass-surv-scripts/"
 saveJAGS.loc <- "saveJAGS/"
-model.file <- str_c(scripts.loc, "model_CJSRL_SiteXSeason_Transmitter.jags")
+model.file <- str_c(scripts.loc, "model_CJSRL_SiteXSeason_covs.jags")
+chop.init <- 8 # Number of days to chop off after transmitter was first deployed (`NULL` if keeping all data).
+chop.CUZA1516 <- FALSE # Set to true if excluding CUZA 2015-2016 (Only works if chop.init is not NULL)
 
 # MCMC values
 nc <- 3 # number of chains
-nb <- 10 #0 #1000 # burn in
-ni <- 20 #20000 # number of iterations
-nt <- 1# 10 # thinning
+nb <- 10 #1000 #0 #1000 # burn in
+ni <- 20 #4000 #20000 # number of iterations
+nt <- 1 #10 # 10 # thinning
 ns <- 50 # number of files for saveJAGS
 
-save.out <- str_c("mod_CJSRL_SiteXSeason_Transmitter_", spp)
+save.out <- str_c("mod_CJSRL_SiteXSeason_covs_", spp)
 #______________________________#
 
 # Data objects to send to JAGS
 data.nams <- c("Y.alive", "Y.dead", "first", "last",
                "nBird", "nSite", "nSeason", "nDOS", "ncovs",
-               "SeasonInd", "SiteInd", "X",
-               "DOSdepl", "time_since_depl", "after_depl")
+               "SeasonInd", "SiteInd", "X")#,
+               #"DOSdepl", "time_since_depl", "after_depl")
 
 # Stuff to save from JAGS
-parameters <- c("B0.mean", "B0.sd", "B0", "B", "B.trans", "P.trans", "p", "psi")
+parameters <- c("B0.mean", "B0.sd", "B0", "B", "p", "psi") # "B.trans", "P.trans", 
 
 # Compile data #
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))
 
 # Function for setting initial values in JAGS
-inits <- function()
-  list(z = z.init, B0 = matrix(rnorm(nSite*nSeason, 4.8, 1), nSite, nSeason), B = rep(0,ncovs), p = 0.9, psi = 0.5) #B0 = rnorm(1, 4.8, 1)
+if(str_detect(save.out, "Transmitter_only")) {
+  inits <- function()
+    list(z = z.init,
+         B0 = rnorm(1, 4.8, 1),
+         B = rep(0,ncovs), p = 0.9, psi = 0.5)
+} else {
+  inits <- function()
+    list(z = z.init,
+         B0 = matrix(rnorm(nSite*nSeason, 4.8, 1), nSite, nSeason),
+         B = rep(0,ncovs), p = 0.9, psi = 0.5)
+}
 
 # Fit model
 data <- list()
@@ -55,11 +66,15 @@ run.time <- end.time - st.time
 run.time
 rm(st.time,end.time)
 
+# If using JagsUI
+library(R.utils)
+saveObject(out, save.out)
+
 #out <- resumeJAGS(fileStub = str_c("saveJAGS/", save.out, "/modsave"), nSaves = 40)
 
 # Gather, combine, and summarize JAGS saves from hard drive #
 rsav <- recoverSaves(str_c(saveJAGS.loc, save.out, "/modsave"))
-mod.raw <- combineSaves(rsav, burnFiles = 1, thin = 5)
+mod.raw <- combineSaves(rsav, burnFiles = 0, thin = 1)
 #Rhat <- gelman.diag(mod.raw)$psrf[, 2]
 #neff <- effectiveSize(mod.raw)
 mod <- mcmcOutput(mod.raw)

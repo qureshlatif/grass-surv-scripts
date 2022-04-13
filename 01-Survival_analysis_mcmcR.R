@@ -6,14 +6,15 @@ library(abind)
 library(RcppArmadillo)
 library(tictoc)
 
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
 
 load("Data_compiled_MissingCovsImputed.RData")
 scripts.loc <- "grass-surv-scripts/"
-spp <- "BAIS" # BAIS or GRSP
+spp <- "GRSP" # BAIS or GRSP
 mod.nam <- "BigCheese"
 chain <- 1 # If running parallel chains
 save.out <- str_c("mod_mcmcR_", mod.nam, "_", spp)
+chop.init <- 8 # Number of days to chop off after transmitter was first deployed (`NULL` if keeping all data).
 
 # Compile detection data #
 source(str_c(scripts.loc, "Data_processing_", mod.nam, ".R"))

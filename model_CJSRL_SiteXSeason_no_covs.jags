@@ -1,0 +1,27 @@
+model {
+
+#Priors
+B0.mean ~ dnorm(0, 0.6666667)
+B0.sd ~ dunif(0, 5)
+for(s in 1:nSite) {
+  for(t in 1:nSeason) {
+    B0[s, t] ~ dnorm(B0.mean, pow(B0.sd, -2))
+  }
+}
+psi ~ dunif(0, 1)
+p ~ dunif(0, 1)
+
+for(i in 1:nBird) {
+  for(j in 1:nDOS) {
+    logit(S[i, j]) <- B0[SiteInd[i], SeasonInd[i]]
+    }
+  z[i, (first[i] + 1)] ~ dbern(S[i, (first[i] + 1)])
+  for(j in (first[i] + 2):last[i]) {
+    z[i, j] ~ dbern(S[i, j]*z[i, (j - 1)])
+    }
+  for(j in (first[i] + 1):last[i]) {
+    Y.alive[i, j] ~ dbern(p * z[i, j])
+    Y.dead[i, j] ~ dbern(psi * (1 - z[i, j]))
+    }
+  }
+}

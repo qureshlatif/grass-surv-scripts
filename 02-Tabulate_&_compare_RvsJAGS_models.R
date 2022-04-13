@@ -2,7 +2,7 @@ library(QSLpersonal)
 library(R.utils)
 
 #setwd("/home/RMBO.LOCAL/quresh.latif/CPW_beetle")
-setwd("C:/Users/Quresh.Latif/files/projects/grassWintSurv")
+setwd("C:/Users/Quresh.Latif/files/projects/grasslands/WintSurv")
 load("Data_compiled.RData")
 spp <- "BAIS" # BAIS or GRSP
 
