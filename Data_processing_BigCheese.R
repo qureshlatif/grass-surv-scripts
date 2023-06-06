@@ -5,6 +5,7 @@ last <- data.spp$Covs$lastDay
 last.alive <- data.spp$Covs$lastAlive
 nBird <- nrow(ymat)
 nDOS <- ncol(ymat)
+ymat.ID <- data.spp$Covs %>% select(Site, Season, anillo)
 
 #_____ Trim data array and adjust indexing._____#
 if(!is.null(chop.init)) {
@@ -28,6 +29,7 @@ if(!is.null(chop.init)) {
   # Trim rows
   ind.rows.chop <- which(apply(ymat, 1, function(x) !any(x == 1, na.rm = T)))
   ymat <- ymat[-ind.rows.chop,]
+  ymat.ID <- ymat.ID %>% slice(-ind.rows.chop)
   first <- first[-ind.rows.chop]
   last <- last[-ind.rows.chop]
   last.alive <- last.alive[-ind.rows.chop]
