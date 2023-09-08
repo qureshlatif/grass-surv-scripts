@@ -12,17 +12,17 @@ sum.fn <- function (x, ndig = 2) {
   se <- sd(x) / sqrt(length(x))
   CI95.lo <- mn - 1.96 * se
   CI95.hi <- mn + 1.96 * se
-  q05 <- quantile(x, prob = 0.05, type = 8)
-  q95 <- quantile(x, prob = 0.95, type = 8)
+  #q05 <- quantile(x, prob = 0.05, type = 8)
+  #q95 <- quantile(x, prob = 0.95, type = 8)
   x.sum <- str_c(round(mn, digits = ndig),
-                        "; 95CI:(", round(CI95.lo, digits = ndig),
+                        " (", round(CI95.lo, digits = ndig),
                         ",", round(CI95.hi, digits = ndig),
-                 ")",
-                 "; q95:(",
-                 round(q05, digits = ndig),
-                 ",",
-                 round(q95, digits = ndig),
-                 ")")
+                 ")")#,
+                 #"; q95:(",
+                 #round(q05, digits = ndig),
+                 #",",
+                 #round(q95, digits = ndig),
+                 #")")
   return(x.sum)
 }
 
@@ -47,11 +47,15 @@ dat.sum <- dat.BAIS %>%
   ) %>%
   left_join(dat.individual.shrubsums %>% select(-site),
             by = "anillo") %>%
-  filter(!is.na(number_shrubs))
+  filter(!is.na(number_shrubs)) %>%
+  mutate(Shrub_density = number_shrubs / 8) %>%
+  select(Site:Species, Shrub_density,
+         shrub_density_pct:average_minimum_distance_btwn_shrubs_m) %>%
+  rename(Shrub_cover = shrub_density_pct)
 
 sum.tab <- dat.sum %>%
   select(Species, PredSurvLevel,
-         number_shrubs:average_minimum_distance_btwn_shrubs_m) %>%
+         Shrub_density:average_minimum_distance_btwn_shrubs_m) %>%
   group_by(Species, PredSurvLevel) %>%
   summarise_all(function(x) sum.fn(x)) %>%
   mutate(Site = "All") %>%
@@ -59,7 +63,7 @@ sum.tab <- dat.sum %>%
   bind_rows(
     dat.sum %>%
       select(Species, Site, PredSurvLevel,
-             number_shrubs:average_minimum_distance_btwn_shrubs_m) %>%
+             Shrub_density:average_minimum_distance_btwn_shrubs_m) %>%
       group_by(Species, Site, PredSurvLevel) %>%
       summarise_all(function(x) sum.fn(x))
   )
@@ -84,8 +88,8 @@ t.test.fn <- function(x, lab) {
 t.test.tab <- dat.sum %>%
   select(Species, Site) %>%
   distinct() %>%
-  mutate(number_shrubs = as.numeric(NA),
-         shrub_density_pct = as.numeric(NA),
+  mutate(Shrub_density = as.numeric(NA),
+         Shrub_cover = as.numeric(NA),
          mean_shrub_size_sqm = as.numeric(NA),
          median_shrub_size_sq_m = as.numeric(NA),
          mean_height_m = as.numeric(NA),
@@ -107,8 +111,8 @@ t.test.tab <- t.test.tab %>%
   bind_rows(t.test.tab %>% slice(1:2) %>%
               mutate(Species = c("BAIS", "GRSP"),
                      Site = "All",
-                     number_shrubs = as.numeric(NA),
-                     shrub_density_pct = as.numeric(NA),
+                     Shrub_density = as.numeric(NA),
+                     Shrub_cover = as.numeric(NA),
                      mean_shrub_size_sqm = as.numeric(NA),
                      median_shrub_size_sq_m = as.numeric(NA),
                      mean_height_m = as.numeric(NA),
